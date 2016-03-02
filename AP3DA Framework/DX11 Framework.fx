@@ -7,6 +7,11 @@ Texture2D terrainTex1 : register(t1);
 Texture2D terrainTex2 : register(t2);
 Texture2D terrainTex3 : register(t3);
 Texture2D terrainTex4 : register(t4);
+//Texture2D colour : register(t5);
+//Texture2D normal : register(t6);
+//Texture2D materialA : register(t7);
+//Texture2D materialD : register(t8);
+//Texture2D materialS : register(t9);
 
 SamplerState samLinear : register(s0);
 
@@ -90,11 +95,19 @@ struct DomainOut {
   float2 Tex      : TEXCOORD;
 };
 
+struct DeferredPixelOut {
+  float4 colour : SV_TARGET1;
+  float4 normal : SV_TARGET2;
+  float4 materialA : SV_TARGET3;
+  float4 materialD : SV_TARGET4;
+  float4 materialS : SV_TARGET5;
+};
+
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-VS_OUTPUT VS(VS_INPUT input) {
+VS_OUTPUT DEFERRED_VS(VS_INPUT input) {
   VS_OUTPUT output = (VS_OUTPUT) 0;
 
   float4 posW = mul(input.PosL, World);
@@ -148,6 +161,19 @@ VS_OUTPUT INSTANCE_VS(INSTANCE_VS_INPUT input) {
   output.TessFactor = gMinTessFactor + tess * (gMaxTessFactor - gMinTessFactor);
 
   return output;
+}
+
+VS_OUTPUT VS(VS_INPUT input) {
+  VS_OUTPUT vOut = (VS_OUTPUT) 0;
+
+  float4 posW = mul(input.PosL, World);
+  vOut.PosW = posW.xyz;
+
+  vOut.PosH = mul(posW, View);
+  vOut.PosH = mul(vOut.PosH, Projection);
+  vOut.Tex = input.Tex;
+
+  return vOut;
 }
 
 // Hull shaders
@@ -221,63 +247,23 @@ DomainOut DS(PatchTess patchTess, float3 bary : SV_DomainLocation, const OutputP
 }
 
 
-
-//--------------------------------------------------------------------------------------
-// Pixel Shader
-//--------------------------------------------------------------------------------------
-float4 PS(DomainOut input) : SV_Target
+// deferred pixel shaders
+DeferredPixelOut DEFERRED_PS(DomainOut input) : SV_Target
 {
-  float3 normalW = normalize(input.NormW);
+  DeferredPixelOut pOut;
+  pOut.normal = float4(normalize(input.NormW), 0.0f);
+  pOut.colour = txDiffuse.Sample(samLinear, input.Tex);
+  pOut.materialA = surface.AmbientMtrl;
+  pOut.materialD = surface.DiffuseMtrl;
+  pOut.materialS = surface.SpecularMtrl;
 
-  float3 toEye = normalize(EyePosW - input.PosW);
-
-  // Get texture data from file
-  float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
-
-  float3 ambient = float3(0.0f, 0.0f, 0.0f);
-  float3 diffuse = float3(0.0f, 0.0f, 0.0f);
-  float3 specular = float3(0.0f, 0.0f, 0.0f);
-
-  float3 lightLecNorm = normalize(light.LightVecW);
-  // Compute Colour
-
-  // Compute the reflection vector.
-  float3 r = reflect(-lightLecNorm, normalW);
-
-  // Determine how much specular light makes it into the eye.
-  float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
-
-  // Determine the diffuse light intensity that strikes the vertex.
-  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
-
-  // Only display specular when there is diffuse
-  if (diffuseAmount <= 0.0f) {
-    specularAmount = 0.0f;
-  }
-
-  // Compute the ambient, diffuse, and specular terms separately.
-  specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
-  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
-  ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
-
-  // Sum all the terms together and copy over the diffuse alpha.
-  float4 finalColour;
-
-  if (HasTexture == 1.0f) {
-    finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
-  }
-  else {
-    finalColour.rgb = ambient + diffuse + specular;
-  }
-
-  finalColour.a = surface.DiffuseMtrl.a;
-
-  return finalColour;
+  return pOut;
 }
 
-float4 TERRAIN_PS(DomainOut input) : SV_Target
+DeferredPixelOut TERRAIN_PS(DomainOut input) : SV_Target
 {
-  float3 normalW = normalize(input.NormW);
+  DeferredPixelOut pOut;
+  pOut.normal = float4(normalize(input.NormW), 0.0f);
 
   // Get texture data from file
   float4 textureColour1 = terrainTex1.Sample(samLinear, input.Tex);
@@ -305,24 +291,168 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
     textureColour = lerp(textureColour4, textureColour3, lerpParam);
   }
 
+  pOut.colour = textureColour;
+  pOut.materialA = surface.AmbientMtrl;
+  pOut.materialD = surface.DiffuseMtrl;
+  pOut.materialS = surface.SpecularMtrl;
+
+  return pOut;
+}
+
+float4 PS(VS_OUTPUT input) : SV_Target
+{
+  float4 colour = txDiffuse.Sample(samLinear, input.Tex);
+  float3 normalW = terrainTex1.Sample(samLinear, input.Tex).xyz;
+  float4 materialA = terrainTex2.Sample(samLinear, input.Tex);
+  float4 materialD = terrainTex3.Sample(samLinear, input.Tex);
+  float4 materialS = terrainTex4.Sample(samLinear, input.Tex);
+
+  normalW = normalize(normalW);
+
+  // TODO
+  //float3 toEye = normalize(EyePosW - input.PosW);
+
   float3 ambient = float3(0.0f, 0.0f, 0.0f);
   float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+  float3 specular = float3(0.0f, 0.0f, 0.0f);
 
   float3 lightLecNorm = normalize(light.LightVecW);
   // Compute Colour
 
+  // Compute the reflection vector.
+  //float3 r = reflect(-lightLecNorm, normalW);
+
+  // Determine how much specular light makes it into the eye.
+  //float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
+
   // Determine the diffuse light intensity that strikes the vertex.
   float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
 
+  // Only display specular when there is diffuse
+  //if (diffuseAmount <= 0.0f) {
+  //  specularAmount = 0.0f;
+  //}
+
   // Compute the ambient, diffuse, and specular terms separately.
-  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
-  ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
+  //specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
+  diffuse += diffuseAmount * (materialD * light.DiffuseLight).rgb;
+  ambient += (materialA * light.AmbientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
   float4 finalColour;
 
-  finalColour.rgb = (textureColour.rgb * (ambient + diffuse));
+  if (colour.r == 0.0f && colour.g == 0.0f && colour.b == 0.0f) {
+    colour = float4(1.0f, 1.0f, 1.0f, colour.a);
+  }
+
+  finalColour.rgb = (colour.rgb * (ambient + diffuse)) + specular;
+
   finalColour.a = surface.DiffuseMtrl.a;
 
   return finalColour;
 }
+
+//--------------------------------------------------------------------------------------
+// Pixel Shader
+//--------------------------------------------------------------------------------------
+//float4 PS(DomainOut input) : SV_Target
+//{
+//  float3 normalW = normalize(input.NormW);
+//
+//  float3 toEye = normalize(EyePosW - input.PosW);
+//
+//  // Get texture data from file
+//  float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+//
+//  float3 ambient = float3(0.0f, 0.0f, 0.0f);
+//  float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+//  float3 specular = float3(0.0f, 0.0f, 0.0f);
+//
+//  float3 lightLecNorm = normalize(light.LightVecW);
+//  // Compute Colour
+//
+//  // Compute the reflection vector.
+//  float3 r = reflect(-lightLecNorm, normalW);
+//
+//  // Determine how much specular light makes it into the eye.
+//  float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
+//
+//  // Determine the diffuse light intensity that strikes the vertex.
+//  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+//
+//  // Only display specular when there is diffuse
+//  if (diffuseAmount <= 0.0f) {
+//    specularAmount = 0.0f;
+//  }
+//
+//  // Compute the ambient, diffuse, and specular terms separately.
+//  specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
+//  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+//  ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
+//
+//  // Sum all the terms together and copy over the diffuse alpha.
+//  float4 finalColour;
+//
+//  if (HasTexture == 1.0f) {
+//    finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+//  }
+//  else {
+//    finalColour.rgb = ambient + diffuse + specular;
+//  }
+//
+//  finalColour.a = surface.DiffuseMtrl.a;
+//
+//  return finalColour;
+//}
+//
+//float4 TERRAIN_PS(DomainOut input) : SV_Target
+//{
+//  float3 normalW = normalize(input.NormW);
+//
+//  // Get texture data from file
+//  float4 textureColour1 = terrainTex1.Sample(samLinear, input.Tex);
+//  float4 textureColour2 = terrainTex2.Sample(samLinear, input.Tex);
+//  float4 textureColour3 = terrainTex3.Sample(samLinear, input.Tex);
+//  float4 textureColour4 = terrainTex4.Sample(samLinear, input.Tex);
+//  float4 textureColour = float4(0.0f, 0.0f, 0.0f, 0.0f);
+//  float lerpParam = 0.0f;
+//
+//  if (abs(input.posL.y) >= 205.0f) {
+//    textureColour = textureColour1;
+//  }
+//  else if (abs(input.posL.y) < 205.0f && abs(input.posL.y) >= 155.0f) {
+//    lerpParam = abs(input.posL.y) - 155.0f;
+//    lerpParam /= 49.0f;
+//    textureColour = lerp(textureColour2, textureColour1, lerpParam);
+//  }
+//  else if (abs(input.posL.y) < 155.0f && abs(input.posL.y) >= 105.0f) {
+//    lerpParam = abs(input.posL.y) - 105.0f;
+//    lerpParam /= 49.0f;
+//    textureColour = lerp(textureColour3, textureColour2, lerpParam);
+//  }
+//  else if (abs(input.posL.y) < 105.0f) {
+//    lerpParam = abs(input.posL.y) / 104.0f;
+//    textureColour = lerp(textureColour4, textureColour3, lerpParam);
+//  }
+//
+//  float3 ambient = float3(0.0f, 0.0f, 0.0f);
+//  float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+//
+//  float3 lightLecNorm = normalize(light.LightVecW);
+//  // Compute Colour
+//
+//  // Determine the diffuse light intensity that strikes the vertex.
+//  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+//
+//  // Compute the ambient, diffuse, and specular terms separately.
+//  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+//  ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
+//
+//  // Sum all the terms together and copy over the diffuse alpha.
+//  float4 finalColour;
+//
+//  finalColour.rgb = (textureColour.rgb * (ambient + diffuse));
+//  finalColour.a = surface.DiffuseMtrl.a;
+//
+//  return finalColour;
+//}

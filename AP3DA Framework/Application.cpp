@@ -303,6 +303,22 @@ HRESULT Application::InitShadersAndInputLayout() {
     return hr;
   }
 
+  hr = CompileShaderFromFile(L"DX11 Framework.fx", "DEFERRED_VS", "vs_4_0", &pVSBlob);
+
+  if (FAILED(hr)) {
+    MessageBox(nullptr,
+      L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+    return hr;
+  }
+
+  // Create the vertex shader
+  hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &deferredVertexShader);
+
+  if (FAILED(hr)) {
+    pVSBlob->Release();
+    return hr;
+  }
+
   ID3DBlob* instanceVSBlob = nullptr;
   hr = CompileShaderFromFile(L"DX11 Framework.fx", "INSTANCE_VS", "vs_4_0", &instanceVSBlob);
 
@@ -369,6 +385,21 @@ HRESULT Application::InitShadersAndInputLayout() {
 
   // Create the pixel shader
   hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
+  pPSBlob->Release();
+
+  if (FAILED(hr))
+    return hr;
+
+  hr = CompileShaderFromFile(L"DX11 Framework.fx", "DEFERRED_PS", "ps_4_0", &pPSBlob);
+
+  if (FAILED(hr)) {
+    MessageBox(nullptr,
+      L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+    return hr;
+  }
+
+  // Create the pixel shader
+  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
@@ -442,6 +473,22 @@ HRESULT Application::InitShadersAndInputLayout() {
   sampDesc.MinLOD = 0;
   sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
   hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
+
+  sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+  sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+  sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+  sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+  sampDesc.MipLODBias = 0.0f;
+  sampDesc.MaxAnisotropy = 1;
+  sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+  sampDesc.BorderColor[0] = 0;
+  sampDesc.BorderColor[1] = 0;
+  sampDesc.BorderColor[2] = 0;
+  sampDesc.BorderColor[3] = 0;
+  sampDesc.MinLOD = 0;
+  sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &s);
 
   return hr;
 }
@@ -533,6 +580,42 @@ HRESULT Application::InitVertexBuffer() {
   if (FAILED(hr))
     return hr;
 
+  float left = (float) ((1920.0f / 2.0f) * -1.0f);
+
+  // Calculate the screen coordinates of the right side of the window.
+  float right = left + (float) 1920.0f;
+
+  // Calculate the screen coordinates of the top of the window.
+  float top = (float) (1080.0f / 2);
+
+  // Calculate the screen coordinates of the bottom of the window.
+  float bottom = top - (float) 1080.0f;
+
+  SimpleVertex quadVertices[] = 
+  {
+    { XMFLOAT3(left, top, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(right, bottom, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(left, bottom, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+
+    { XMFLOAT3(left, top, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(right, top, 0.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+    { XMFLOAT3(right, bottom, 0.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+  };
+
+  ZeroMemory(&bd, sizeof(bd));
+  bd.Usage = D3D11_USAGE_DEFAULT;
+  bd.ByteWidth = sizeof(SimpleVertex) * 6;
+  bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+  bd.CPUAccessFlags = 0;
+
+  ZeroMemory(&InitData, sizeof(InitData));
+  InitData.pSysMem = quadVertices;
+
+  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &fullScreenVertexBuffer);
+
+  if (FAILED(hr))
+    return hr;
+
   return S_OK;
 }
 
@@ -605,6 +688,25 @@ HRESULT Application::InitIndexBuffer() {
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = planeIndices;
 //  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pOceanPlaneIndexBuffer);
+
+  if (FAILED(hr))
+    return hr;
+
+  UINT quadIndices[] =
+  {
+    0, 1, 2,
+    3, 4, 5
+  };
+
+  ZeroMemory(&bd, sizeof(bd));
+  bd.Usage = D3D11_USAGE_DEFAULT;
+  bd.ByteWidth = sizeof(UINT) * 6;
+  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+  bd.CPUAccessFlags = 0;
+
+  ZeroMemory(&InitData, sizeof(InitData));
+  InitData.pSysMem = quadIndices;
+  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &fullScreenIndexBuffer);
 
   if (FAILED(hr))
     return hr;
@@ -702,7 +804,7 @@ HRESULT Application::InitDevice() {
 
   UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-  UINT sampleCount = 4;
+  UINT sampleCount = 1;
 
   DXGI_SWAP_CHAIN_DESC sd;
   ZeroMemory(&sd, sizeof(sd));
@@ -741,6 +843,58 @@ HRESULT Application::InitDevice() {
 
   if (FAILED(hr))
     return hr;
+
+  // create deferred rendering resources
+
+  D3D11_TEXTURE2D_DESC textureDesc;
+  D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+  D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+
+  ZeroMemory(&textureDesc, sizeof(textureDesc));
+  textureDesc.Width = _renderWidth;
+  textureDesc.Height = _renderHeight;
+  textureDesc.MipLevels = 1;
+  textureDesc.ArraySize = 1;
+  textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+  textureDesc.SampleDesc.Count = 1;
+  textureDesc.Usage = D3D11_USAGE_DEFAULT;
+  textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+  textureDesc.CPUAccessFlags = 0;
+  textureDesc.MiscFlags = 0;
+
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    hr = _pd3dDevice->CreateTexture2D(&textureDesc, NULL, &deferredTextures[i]);
+    if (FAILED(hr)) {
+      return hr;
+    }
+  }
+
+  // Setup the description of the render target view.
+  renderTargetViewDesc.Format = textureDesc.Format;
+  renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+  renderTargetViewDesc.Texture2D.MipSlice = 0;
+
+  // Create the render target views.
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    hr = _pd3dDevice->CreateRenderTargetView(deferredTextures[i], &renderTargetViewDesc, &deferredRenderTargets[i]);
+    if (FAILED(hr)) {
+      return hr;
+    }
+  }
+
+  // Setup the description of the shader resource view.
+  shaderResourceViewDesc.Format = textureDesc.Format;
+  shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+  shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+  shaderResourceViewDesc.Texture2D.MipLevels = 1;
+
+  // Create the shader resource views.
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    hr = _pd3dDevice->CreateShaderResourceView(deferredTextures[i], &shaderResourceViewDesc, &deferredResourceViews[i]);
+    if (FAILED(hr)) {
+      return false;
+    }
+  }
 
   // Setup the viewport
   D3D11_VIEWPORT vp;
@@ -936,18 +1090,23 @@ void Application::Update() {
   }
 }
 
-void Application::Draw() {
-  //
-  // Clear buffers
-  //
+void Application::renderToTextures(ConstantBuffer& cb) {
+  _pImmediateContext->VSSetShader(deferredVertexShader, nullptr, 0);
+  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
+  ID3D11ShaderResourceView* null = nullptr;
+  _pImmediateContext->PSSetShaderResources(0, 1, &null);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
 
+  _pImmediateContext->OMSetRenderTargets(DEFERRED_BUFFERS, deferredRenderTargets, _depthStencilView);
   float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  //
-  // Setup buffers and render scene
-  //
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    _pImmediateContext->ClearRenderTargetView(deferredRenderTargets[i], ClearColor);
+  }
+  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
   if (_wireFrame) {
     _pImmediateContext->RSSetState(wireframe);
@@ -956,18 +1115,12 @@ void Application::Draw() {
     _pImmediateContext->RSSetState(CWcullMode);
   }
 
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
-
   _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
-
-  ConstantBuffer cb;
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
   XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
@@ -1000,6 +1153,11 @@ void Application::Draw() {
   cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
   cb.HasTexture = 1.0f;
   _pImmediateContext->PSSetShader(terrainPixelShader, nullptr, 0);
+  _pImmediateContext->PSSetShaderResources(0, 1, &null);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
 
   // Update constant buffer
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
@@ -1007,11 +1165,11 @@ void Application::Draw() {
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
 
   // Draw object
-  //terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
 
   _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0); 
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
   _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 
   for (auto chunk : chunks) {
@@ -1019,7 +1177,7 @@ void Application::Draw() {
   }
 
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+  _pImmediateContext->VSSetShader(deferredVertexShader, nullptr, 0);
 
   // Render all scene objects
   for (int i = 0; i < _gameObjects.size(); i++) {
@@ -1051,33 +1209,86 @@ void Application::Draw() {
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 
-  float blendFactors[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-  _pImmediateContext->OMSetBlendState(Transparency, blendFactors, 0xffffffff);
-  if (_wireFrame) {
-    _pImmediateContext->RSSetState(RSCullNoneWireFrame);
-  }
-  else {
-    _pImmediateContext->RSSetState(RSCullNone);
-  }
+  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+}
 
-  material = ocean->GetMaterial();
+void Application::Draw() {
+  //
+  // Clear buffers
+  //
+  ConstantBuffer cb;
+  renderToTextures(cb);
 
-  // Copy material to shader
-  cb.surface.AmbientMtrl = material.ambient;
-  cb.surface.DiffuseMtrl = material.diffuse;
-  cb.surface.SpecularMtrl = material.specular;
+  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
 
-  // Set world matrix
-  cb.World = XMMatrixTranspose(ocean->GetWorldMatrix());
-  cb.HasTexture = 0.0f;
+  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
+  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  // Update constant buffer
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+  _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+  _pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+  _pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->PSSetSamplers(0, 1, &s);
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+  _pImmediateContext->PSSetShaderResources(0, 1, &deferredResourceViews[0]);
+  _pImmediateContext->PSSetShaderResources(1, 1, &deferredResourceViews[1]);
+  _pImmediateContext->PSSetShaderResources(2, 1, &deferredResourceViews[2]);
+  _pImmediateContext->PSSetShaderResources(3, 1, &deferredResourceViews[3]);
+  _pImmediateContext->PSSetShaderResources(4, 1, &deferredResourceViews[4]);
+
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetBasicView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getOrthoProjection();
+
+  XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
+  XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+  XMMATRIX world = XMMatrixIdentity();
+
+  cb.World = XMMatrixTranspose(world);
+  cb.View = XMMatrixTranspose(view);
+  cb.Projection = XMMatrixTranspose(projection);
+  cb.light = basicLight;
+  cb.EyePosW = cameras[selectedCamera]->GetPosition();
+
+  UINT stride = sizeof(SimpleVertex);
+  UINT offset = 0;
+  
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+  _pImmediateContext->IASetVertexBuffers(0, 1, &fullScreenVertexBuffer, &stride, &offset);
+  _pImmediateContext->IASetIndexBuffer(fullScreenIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-  // Draw object
-  //ocean->Draw(_pImmediateContext);
+  _pImmediateContext->DrawIndexed(6, 0, 0);
 
-  _pImmediateContext->OMSetBlendState(nullptr, blendFactors, 0xffffffff);
+  //float blendFactors[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  //_pImmediateContext->OMSetBlendState(Transparency, blendFactors, 0xffffffff);
+  //if (_wireFrame) {
+  //  _pImmediateContext->RSSetState(RSCullNoneWireFrame);
+  //}
+  //else {
+  //  _pImmediateContext->RSSetState(RSCullNone);
+  //}
+
+  //material = ocean->GetMaterial();
+
+  //// Copy material to shader
+  //cb.surface.AmbientMtrl = material.ambient;
+  //cb.surface.DiffuseMtrl = material.diffuse;
+  //cb.surface.SpecularMtrl = material.specular;
+
+  //// Set world matrix
+  //cb.World = XMMatrixTranspose(ocean->GetWorldMatrix());
+  //cb.HasTexture = 0.0f;
+
+  //// Update constant buffer
+  //_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+  //// Draw object
+  ////ocean->Draw(_pImmediateContext);
+
+  //_pImmediateContext->OMSetBlendState(nullptr, blendFactors, 0xffffffff);
 
   //
   // Present our back buffer to our front buffer

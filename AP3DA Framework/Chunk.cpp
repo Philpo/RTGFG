@@ -14,17 +14,10 @@ Chunk::Chunk(int height, int width, int depth, Geometry voxelGeometry, Material 
 
   voxels = new Voxel***[height];
   for (int i = 0; i < height; i++) {
-
     voxels[i] = new Voxel**[width];
     for (int j = 0; j < width; j++) {
       voxels[i][j] = new Voxel*[depth];
       for (int k = 0; k < depth; k++) {
-        //float x = (distanceFromCentreX + (j * 2)) - 1;
-        //float y = (distanceFromCentreY - (i * 2)) + 1;
-        //float z = (distanceFromCentreZ + (k * 2)) - 1;
-
-        //cout << "(" << x << "," << y << "," << z << ")" << endl;
-
         Voxel* voxel = new Voxel(voxelGeometry, voxelMaterial);
         voxel->SetParent(this);
         voxel->SetPosition(-chunkWidth + (j * 2), -chunkHeight + (i * 2), -chunkDepth + (k * 2));
@@ -158,7 +151,6 @@ void Chunk::Update(float t) {
       }
     }
   }
-  cout << currentVoxel << endl;
 
   //for (int i = 0; i < chunkHeight; i++) {
   //  for (int j = 0; j < chunkWidth; j++) {
