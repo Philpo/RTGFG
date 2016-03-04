@@ -855,7 +855,7 @@ HRESULT Application::InitDevice() {
   textureDesc.Height = _renderHeight;
   textureDesc.MipLevels = 1;
   textureDesc.ArraySize = 1;
-  textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+  textureDesc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
   textureDesc.SampleDesc.Count = 1;
   textureDesc.Usage = D3D11_USAGE_DEFAULT;
   textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -1165,7 +1165,7 @@ void Application::renderToTextures(ConstantBuffer& cb) {
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
 
   // Draw object
-  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  //terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
   _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
 
   _pImmediateContext->IASetInputLayout(instanceLayout);
@@ -1225,6 +1225,7 @@ void Application::Draw() {
   _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
   _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+  _pImmediateContext->RSSetState(CWcullMode);
   _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
   _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
   _pImmediateContext->HSSetShader(nullptr, nullptr, 0);

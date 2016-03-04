@@ -96,11 +96,11 @@ struct DomainOut {
 };
 
 struct DeferredPixelOut {
-  float4 colour : SV_TARGET1;
-  float4 normal : SV_TARGET2;
-  float4 materialA : SV_TARGET3;
-  float4 materialD : SV_TARGET4;
-  float4 materialS : SV_TARGET5;
+  float4 colour : SV_TARGET0;
+  float4 normal : SV_TARGET1;
+  float4 materialA : SV_TARGET2;
+  float4 materialD : SV_TARGET3;
+  float4 materialS : SV_TARGET4;
 };
 
 

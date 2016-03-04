@@ -12,7 +12,7 @@ class Camera {
 private:
   bool moveable, freeFlying;
 
-  XMFLOAT3 _eye;
+  XMFLOAT3 _eye, baseEye;
   XMFLOAT3 _at;
   XMFLOAT3 _worldUp;
   XMFLOAT3 right, up;
