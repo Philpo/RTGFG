@@ -9,6 +9,7 @@ Texture2D terrainTex3 : register(t3);
 Texture2D terrainTex4 : register(t4);
 
 SamplerState samLinear : register(s0);
+SamplerComparisonState shadowSampler : register(s1);
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
@@ -33,6 +34,7 @@ cbuffer ConstantBuffer : register(b0) {
   matrix World;
   matrix View;
   matrix Projection;
+  matrix shadowTransform;
 
   SurfaceInfo surface;
   Light light;
@@ -68,6 +70,7 @@ struct VS_OUTPUT {
   float3 posL : POS_LOCAL;
   float2 Tex : TEXCOORD0;
   float TessFactor : TESS;
+  float4 shadowPos : TEXCOORD1;
 };
 
 struct PatchTess {
@@ -80,6 +83,7 @@ struct HullOut {
   float3 posL : POS_LOCAL;
   float3 NormalW  : NORMAL;
   float2 Tex      : TEXCOORD;
+  float4 shadowPos : SHADOWPOS;
 };
 
 struct DomainOut {
@@ -88,8 +92,28 @@ struct DomainOut {
   float3 posL : POS_LOCAL;
   float3 NormW  : NORMAL;
   float2 Tex      : TEXCOORD;
+  float4 shadowPos : SHADOWPOS;
 };
 
+float calcShadowFactor(float4 shadowPos) {
+  float depth = shadowPos.z;
+
+  float dx = 1.0f / 2048.0f;
+
+  float percentLit = 0.0f;
+
+  float2 offsets[9] = {
+    float2(-dx, -dx), float2(0.0f, -dx), float2(dx, -dx),
+    float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+    float2(-dx, +dx), float2(0.0f, +dx), float2(dx, +dx)
+  };
+
+  for (int i = 0; i < 9; ++i) {
+    percentLit += txDiffuse.SampleCmpLevelZero(shadowSampler, shadowPos.xy + offsets[i], depth).r;
+  }
+
+  return percentLit /= 9.0f;
+}
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -107,6 +131,8 @@ VS_OUTPUT VS(VS_INPUT input) {
   float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
   output.NormW = normalize(normalW);
   output.posL = input.PosL.xyz;
+
+  output.shadowPos = mul(posW, shadowTransform);
 
   float d = distance(output.PosW, EyePosW);
 
@@ -135,6 +161,7 @@ VS_OUTPUT INSTANCE_VS(INSTANCE_VS_INPUT input) {
   float3 normalW = mul(float4(input.NormL, 0.0f), input.world).xyz;
   output.NormW = normalize(normalW);
   output.posL = input.PosL.xyz;
+  output.shadowPos = mul(posW, shadowTransform);
 
   float d = distance(output.PosW, EyePosW);
 
@@ -180,6 +207,7 @@ HullOut HS(InputPatch<VS_OUTPUT, 3> p, uint i : SV_OutputControlPointID, uint pa
   hout.posL = p[i].posL;
   hout.NormalW = p[i].NormW;
   hout.Tex = p[i].Tex;
+  hout.shadowPos = p[i].shadowPos;
 
   return hout;
 }
@@ -194,6 +222,7 @@ DomainOut DS(PatchTess patchTess, float3 bary : SV_DomainLocation, const OutputP
   dout.posL = bary.x*tri[0].posL + bary.y*tri[1].posL + bary.z*tri[2].posL;
   dout.NormW = bary.x*tri[0].NormalW + bary.y*tri[1].NormalW + bary.z*tri[2].NormalW;
   dout.Tex = bary.x*tri[0].Tex + bary.y*tri[1].Tex + bary.z*tri[2].Tex;
+  dout.shadowPos = bary.x*tri[0].shadowPos + bary.y*tri[1].shadowPos + bary.z*tri[2].shadowPos;
 
   // Interpolating normal can unnormalize it, so normalize it.
   dout.NormW = normalize(dout.NormW);
@@ -227,12 +256,19 @@ DomainOut DS(PatchTess patchTess, float3 bary : SV_DomainLocation, const OutputP
 //--------------------------------------------------------------------------------------
 float4 PS(DomainOut input) : SV_Target
 {
+  float depth = input.shadowPos.z - 0.001f;
+  float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
+  shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
+  //shadowColour.r = calcShadowFactor(input.shadowPos);
+
+  //return float4(depth, depth, depth, 1.0f);
+  //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
   float3 normalW = normalize(input.NormW);
 
   float3 toEye = normalize(EyePosW - input.PosW);
 
   // Get texture data from file
-  float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+  float4 textureColour = float4(1.0f, 1.0f, 1.0f, 1.0f);//txDiffuse.Sample(samLinear, input.Tex);
 
   float3 ambient = float3(0.0f, 0.0f, 0.0f);
   float3 diffuse = float3(0.0f, 0.0f, 0.0f);
@@ -256,8 +292,16 @@ float4 PS(DomainOut input) : SV_Target
   }
 
   // Compute the ambient, diffuse, and specular terms separately.
-  specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
-  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+  if (depth <= shadowColour.r) {
+    diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+    specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
+  }
+  else {
+    diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+    specular += shadowColour.r * (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
+  }
+  //specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
+  //diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
   ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
@@ -277,6 +321,13 @@ float4 PS(DomainOut input) : SV_Target
 
 float4 TERRAIN_PS(DomainOut input) : SV_Target
 {
+  float depth = input.shadowPos.z - 0.001f;
+  float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
+  shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
+  //shadowColour.r = calcShadowFactor(input.shadowPos);
+  //return float4(depth, depth, depth, 1.0f);
+  //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
+
   float3 normalW = normalize(input.NormW);
 
   // Get texture data from file
@@ -315,7 +366,12 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
   float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
 
   // Compute the ambient, diffuse, and specular terms separately.
-  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+  if (depth <= shadowColour.r) {
+    diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  }
+  else {
+    diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  }
   ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
@@ -326,3 +382,9 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
 
   return finalColour;
 }
+
+//RasterizerState Depth {
+//  DepthBias = 100000;
+//  DepthBiasClamp = 0;
+//  SlopeScaledDepthBias = 1.0f;
+//};

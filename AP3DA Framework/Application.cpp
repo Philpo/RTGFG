@@ -178,9 +178,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   terrain = new Terrain(noSpecMaterial);
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
-  //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
+  int seed = time(0);
+  cout << seed << endl;
+  terrain->diamondSquare(TERRAIN_DEPTH, seed, 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
-  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+  //terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, CELL_WIDTH, CELL_DEPTH);
 
   ocean = new Terrain(oceanMaterial);
@@ -220,7 +222,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
   basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
   basicLight.SpecularPower = 20.0f;
-  basicLight.LightVecW = XMFLOAT3(-0.5f, 1.0f, -1.0f);
+  basicLight.LightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
 
   Geometry cubeGeometry;
   cubeGeometry.indexBuffer = _pIndexBuffer;
@@ -251,33 +253,33 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   ocean->setGeometry(planeGeometry);
   ocean->SetPosition(-106.0f, -64.9f, -106.0f);
 
-  GameObject * gameObject;// = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
-  //gameObject->SetPosition(-200.0f, -72.0f, -200.0f);
+  GameObject * gameObject = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
+  gameObject->SetPosition(0.0f, 2.0f, -2.0f);
   //gameObject->SetTextureRV(_pTextureRV);
 
-  //_gameObjects.push_back(gameObject);
+//  _gameObjects.push_back(gameObject);
 
-  //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
+  gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
-  //gameObject->SetPosition(-203.0f, -74.0f, -200.0f);
+  gameObject->SetPosition(2.0f, 1.0f, 0.0f);
   //gameObject->SetTextureRV(_pTextureRV);
 
-  //_gameObjects.push_back(gameObject);
+//  _gameObjects.push_back(gameObject);
 
-  Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(0.0, 0.0, 0.0);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(0.0, 0.0, 0.0);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
-  chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(-16.0, 0.0, 0.0);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(-16.0, 0.0, 0.0);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
-  chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(16.0, 0.0, 0.0);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(16.0, 0.0, 0.0);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
   return S_OK;
 }
@@ -442,6 +444,14 @@ HRESULT Application::InitShadersAndInputLayout() {
   sampDesc.MinLOD = 0;
   sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
   hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
+
+  sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+  sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
+
+  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &shadowSampler);
 
   return hr;
 }
@@ -702,7 +712,7 @@ HRESULT Application::InitDevice() {
 
   UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-  UINT sampleCount = 4;
+  UINT sampleCount = 1;
 
   DXGI_SWAP_CHAIN_DESC sd;
   ZeroMemory(&sd, sizeof(sd));
@@ -743,7 +753,6 @@ HRESULT Application::InitDevice() {
     return hr;
 
   // Setup the viewport
-  D3D11_VIEWPORT vp;
   vp.Width = (FLOAT) _renderWidth;
   vp.Height = (FLOAT) _renderHeight;
   vp.MinDepth = 0.0f;
@@ -751,6 +760,13 @@ HRESULT Application::InitDevice() {
   vp.TopLeftX = 0;
   vp.TopLeftY = 0;
   _pImmediateContext->RSSetViewports(1, &vp);
+
+  lightVP.Width = (FLOAT) _renderWidth;
+  lightVP.Height = (FLOAT) _renderHeight;
+  lightVP.MinDepth = 0.0f;
+  lightVP.MaxDepth = 1.0f;
+  lightVP.TopLeftX = 0;
+  lightVP.TopLeftY = 0;
 
   InitShadersAndInputLayout();
 
@@ -789,6 +805,44 @@ HRESULT Application::InitDevice() {
 
   _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
   _pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
+
+  //depthStencilDesc.Width = 2048;
+  //depthStencilDesc.Height = 2048;
+  depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+  depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+
+  ID3D11Texture2D* lightTex;
+  hr = _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &lightTex);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
+  viewDesc.Flags = 0;
+  viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+  viewDesc.Texture2D.MipSlice = 0;
+
+  hr = _pd3dDevice->CreateDepthStencilView(lightTex, &viewDesc, &lightDepthBuffer);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  D3D11_SHADER_RESOURCE_VIEW_DESC rViewDesc;
+  rViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+  rViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+  rViewDesc.Texture2D.MipLevels = depthStencilDesc.MipLevels;
+  rViewDesc.Texture2D.MostDetailedMip = 0;
+
+  hr = _pd3dDevice->CreateShaderResourceView(lightTex, &rViewDesc, &lightDepthView);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  lightTex->Release();
 
   _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
 
@@ -936,6 +990,84 @@ void Application::Update() {
   }
 }
 
+struct sphere {
+  XMFLOAT3 centre;
+  float radius;
+};
+
+
+void Application::shadowPass(ConstantBuffer& cb) {
+  _pImmediateContext->OMSetRenderTargets(1, &null, lightDepthBuffer);
+  _pImmediateContext->RSSetViewports(1, &lightVP);
+  _pImmediateContext->ClearDepthStencilView(lightDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+  sphere bounds;
+  bounds.centre = XMFLOAT3(0.0f, 0.0f, 0.0f);
+  float halfWidth = TERRAIN_WIDTH / 2.0f;
+  bounds.radius = sqrtf(halfWidth * halfWidth + halfWidth * halfWidth);
+
+  XMVECTOR lightDir = XMLoadFloat3(&basicLight.LightVecW);
+  XMVECTOR lightPos = 2.0f * bounds.radius * lightDir;
+  XMVECTOR targetPos = XMLoadFloat3(&bounds.centre);
+  XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+  XMMATRIX V = XMMatrixLookAtLH(lightPos, targetPos, up);
+  //XMMATRIX view = XMMatrixLookAtLH(lightPos, XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+  //XMMATRIX proj = XMMatrixOrthographicLH((float) _renderWidth, (float) _renderHeight, 0.01f, 1000.0f);
+
+  XMFLOAT3 sphereCenterLS;
+  XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, V));
+
+  // Ortho frustum in light space encloses scene.
+  float l = sphereCenterLS.x - bounds.radius;
+  float b = sphereCenterLS.y - bounds.radius;
+  float n = sphereCenterLS.z - bounds.radius;
+  float r = sphereCenterLS.x + bounds.radius;
+  float t = sphereCenterLS.y + bounds.radius;
+  float f = sphereCenterLS.z + bounds.radius;
+  XMMATRIX P = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+  XMMATRIX t1(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+  XMMATRIX s = V * P * t1;
+
+  cb.View = XMMatrixTranspose(V);
+  cb.Projection = XMMatrixTranspose(P);
+  cb.shadowTransform = XMMatrixTranspose(s);
+
+  _pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
+
+  // Update constant buffer
+  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+  // Draw object
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
+  for (auto chunk : chunks) {
+    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+
+  // Render all scene objects
+  for (int i = 0; i < _gameObjects.size(); i++) {
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+}
+
 void Application::Draw() {
   //
   // Clear buffers
@@ -966,8 +1098,23 @@ void Application::Draw() {
   _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+  _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
 
   ConstantBuffer cb;
+
+  cb.EyePosW = cameras[selectedCamera]->GetPosition();
+  cb.gMaxTessFactor = 1.0f;
+  cb.gMinTessFactor = 1.0f;
+  cb.gMaxTessDistance = 1.0f;
+  cb.gMinTessDistance = 10.0f;
+
+  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
+
+  shadowPass(cb);
+
+  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+  _pImmediateContext->RSSetViewports(1, &vp);
 
   XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
@@ -978,15 +1125,45 @@ void Application::Draw() {
   cb.View = XMMatrixTranspose(view);
   cb.Projection = XMMatrixTranspose(projection);
 
-  cb.light = basicLight;
-  cb.EyePosW = cameras[selectedCamera]->GetPosition();
-  cb.gMaxTessFactor = 1.0f;
-  cb.gMinTessFactor = 1.0f;
-  cb.gMaxTessDistance = 1.0f;
-  cb.gMinTessDistance = 10.0f;
+  //XMVECTOR lightDir = XMLoadFloat3(&basicLight.LightVecW);
+  //XMVECTOR lightPos = 2.0f * lightDir;
+  //view = XMMatrixLookAtLH(lightPos, XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+  //XMMATRIX proj = XMMatrixOrthographicLH((float) _renderWidth, (float) _renderHeight, 0.01f, 1000.0f);
+  //XMMATRIX t(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
 
-  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
-  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
+  sphere bounds;
+  bounds.centre = XMFLOAT3(0.0f, 0.0f, 0.0f);
+  float halfWidth = TERRAIN_WIDTH / 2.0f;
+  bounds.radius = sqrtf(halfWidth * halfWidth + halfWidth * halfWidth);
+
+  XMVECTOR lightDir = XMLoadFloat3(&basicLight.LightVecW);
+  XMVECTOR lightPos = 2.0f * bounds.radius * lightDir;
+  XMVECTOR targetPos = XMLoadFloat3(&bounds.centre);
+  XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+  XMMATRIX V = XMMatrixLookAtLH(lightPos, targetPos, up);
+  //XMMATRIX view = XMMatrixLookAtLH(lightPos, XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+  //XMMATRIX proj = XMMatrixOrthographicLH((float) _renderWidth, (float) _renderHeight, 0.01f, 1000.0f);
+
+  XMFLOAT3 sphereCenterLS;
+  XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, V));
+
+  // Ortho frustum in light space encloses scene.
+  float l = sphereCenterLS.x - bounds.radius;
+  float b = sphereCenterLS.y - bounds.radius;
+  float n = sphereCenterLS.z - bounds.radius;
+  float r = sphereCenterLS.x + bounds.radius;
+  float t = sphereCenterLS.y + bounds.radius;
+  float f = sphereCenterLS.z + bounds.radius;
+  XMMATRIX P = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+  //cb.View = XMMatrixTranspose(V);
+  //cb.Projection = XMMatrixTranspose(P);
+
+  //cb.View = XMMatrixTranspose(view);
+  //cb.Projection = XMMatrixTranspose(proj);
+
+  cb.light = basicLight;
 
   // Get render material
   Material material = terrain->GetMaterial();
@@ -999,7 +1176,9 @@ void Application::Draw() {
   // Set world matrix
   cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
   cb.HasTexture = 1.0f;
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
   _pImmediateContext->PSSetShader(terrainPixelShader, nullptr, 0);
+  _pImmediateContext->PSSetShaderResources(0, 1, &lightDepthView);
 
   // Update constant buffer
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
@@ -1007,8 +1186,9 @@ void Application::Draw() {
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
 
   // Draw object
-  //terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
   _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+  _pImmediateContext->PSSetShaderResources(0, 1, &lightDepthView);
 
   _pImmediateContext->IASetInputLayout(instanceLayout);
   _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0); 
