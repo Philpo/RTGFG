@@ -266,18 +266,20 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
   chunk->SetPosition(0.0, 0.0, 0.0);
+  chunk->perlinNoise2D(time(0), 8, 8, 4, 0.5, 4);
+  chunk->perlinNoise3D(time(0), 8, 8, 16, 4, 0.5, 1);
   chunk->Update(0);
   chunks.push_back(chunk);
 
-  chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(-16.0, 0.0, 0.0);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(-16.0, 0.0, 0.0);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
-  chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(16.0, 0.0, 0.0);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(16.0, 0.0, 0.0);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
   return S_OK;
 }
@@ -1237,9 +1239,9 @@ void Application::Draw() {
 
   _pImmediateContext->PSSetShaderResources(0, 1, &deferredResourceViews[0]);
   _pImmediateContext->PSSetShaderResources(1, 1, &deferredResourceViews[1]);
-  _pImmediateContext->PSSetShaderResources(2, 1, &deferredResourceViews[2]);
-  _pImmediateContext->PSSetShaderResources(3, 1, &deferredResourceViews[3]);
-  _pImmediateContext->PSSetShaderResources(4, 1, &deferredResourceViews[4]);
+  //_pImmediateContext->PSSetShaderResources(2, 1, &deferredResourceViews[2]);
+  //_pImmediateContext->PSSetShaderResources(3, 1, &deferredResourceViews[3]);
+  //_pImmediateContext->PSSetShaderResources(4, 1, &deferredResourceViews[4]);
 
   XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetBasicView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getOrthoProjection();

@@ -98,9 +98,9 @@ struct DomainOut {
 struct DeferredPixelOut {
   float4 colour : SV_TARGET0;
   float4 normal : SV_TARGET1;
-  float4 materialA : SV_TARGET2;
-  float4 materialD : SV_TARGET3;
-  float4 materialS : SV_TARGET4;
+  //float4 materialA : SV_TARGET2;
+  //float4 materialD : SV_TARGET3;
+  //float4 materialS : SV_TARGET4;
 };
 
 
@@ -253,9 +253,9 @@ DeferredPixelOut DEFERRED_PS(DomainOut input) : SV_Target
   DeferredPixelOut pOut;
   pOut.normal = float4(normalize(input.NormW), 0.0f);
   pOut.colour = txDiffuse.Sample(samLinear, input.Tex);
-  pOut.materialA = surface.AmbientMtrl;
-  pOut.materialD = surface.DiffuseMtrl;
-  pOut.materialS = surface.SpecularMtrl;
+  //pOut.materialA = surface.AmbientMtrl;
+  //pOut.materialD = surface.DiffuseMtrl;
+  //pOut.materialS = surface.SpecularMtrl;
 
   return pOut;
 }
@@ -292,9 +292,9 @@ DeferredPixelOut TERRAIN_PS(DomainOut input) : SV_Target
   }
 
   pOut.colour = textureColour;
-  pOut.materialA = surface.AmbientMtrl;
-  pOut.materialD = surface.DiffuseMtrl;
-  pOut.materialS = surface.SpecularMtrl;
+  //pOut.materialA = surface.AmbientMtrl;
+  //pOut.materialD = surface.DiffuseMtrl;
+  //pOut.materialS = surface.SpecularMtrl;
 
   return pOut;
 }
@@ -303,9 +303,9 @@ float4 PS(VS_OUTPUT input) : SV_Target
 {
   float4 colour = txDiffuse.Sample(samLinear, input.Tex);
   float3 normalW = terrainTex1.Sample(samLinear, input.Tex).xyz;
-  float4 materialA = terrainTex2.Sample(samLinear, input.Tex);
-  float4 materialD = terrainTex3.Sample(samLinear, input.Tex);
-  float4 materialS = terrainTex4.Sample(samLinear, input.Tex);
+  //float4 materialA = terrainTex2.Sample(samLinear, input.Tex);
+  //float4 materialD = terrainTex3.Sample(samLinear, input.Tex);
+  //float4 materialS = terrainTex4.Sample(samLinear, input.Tex);
 
   normalW = normalize(normalW);
 
@@ -335,8 +335,8 @@ float4 PS(VS_OUTPUT input) : SV_Target
 
   // Compute the ambient, diffuse, and specular terms separately.
   //specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
-  diffuse += diffuseAmount * (materialD * light.DiffuseLight).rgb;
-  ambient += (materialA * light.AmbientLight).rgb;
+  diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+  ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
   float4 finalColour;

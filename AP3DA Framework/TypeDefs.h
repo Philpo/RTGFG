@@ -3,7 +3,7 @@
 
 using namespace DirectX;
 
-const int DEFERRED_BUFFERS = 5;
+const int DEFERRED_BUFFERS = 2;
 
 struct SimpleVertex {
   XMFLOAT3 PosL;
