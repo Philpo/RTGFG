@@ -180,9 +180,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
   int seed = time(0);
   cout << seed << endl;
-  terrain->diamondSquare(TERRAIN_DEPTH, seed, 1.0f, 255.0f);
+  //terrain->diamondSquare(TERRAIN_DEPTH, seed, 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
-  //terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, CELL_WIDTH, CELL_DEPTH);
 
   ocean = new Terrain(oceanMaterial);
@@ -257,7 +257,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   gameObject->SetPosition(0.0f, 2.0f, -2.0f);
   //gameObject->SetTextureRV(_pTextureRV);
 
-//  _gameObjects.push_back(gameObject);
+  _gameObjects.push_back(gameObject);
 
   gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
@@ -761,8 +761,8 @@ HRESULT Application::InitDevice() {
   vp.TopLeftY = 0;
   _pImmediateContext->RSSetViewports(1, &vp);
 
-  lightVP.Width = (FLOAT) _renderWidth;
-  lightVP.Height = (FLOAT) _renderHeight;
+  lightVP.Width = (FLOAT) 2048;
+  lightVP.Height = (FLOAT) 2048;
   lightVP.MinDepth = 0.0f;
   lightVP.MaxDepth = 1.0f;
   lightVP.TopLeftX = 0;
@@ -806,8 +806,8 @@ HRESULT Application::InitDevice() {
   _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
   _pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
 
-  //depthStencilDesc.Width = 2048;
-  //depthStencilDesc.Height = 2048;
+  depthStencilDesc.Width = 2048;
+  depthStencilDesc.Height = 2048;
   depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
   depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 
@@ -852,11 +852,17 @@ HRESULT Application::InitDevice() {
   ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
   cmdesc.FillMode = D3D11_FILL_SOLID;
   cmdesc.CullMode = D3D11_CULL_NONE;
+  cmdesc.DepthBias = 100000;
+  cmdesc.DepthBiasClamp = 0;
+  cmdesc.SlopeScaledDepthBias = 1.0f;
   hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCullNone);
 
   ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
   cmdesc.FillMode = D3D11_FILL_WIREFRAME;
   cmdesc.CullMode = D3D11_CULL_NONE;
+  cmdesc.DepthBias = 100000;
+  cmdesc.DepthBiasClamp = 0;
+  cmdesc.SlopeScaledDepthBias = 1.0f;
   hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCullNoneWireFrame);
 
   D3D11_DEPTH_STENCIL_DESC dssDesc;
@@ -997,6 +1003,8 @@ struct sphere {
 
 
 void Application::shadowPass(ConstantBuffer& cb) {
+  ID3D11ShaderResourceView* nullView = nullptr;
+  _pImmediateContext->PSSetShaderResources(0, 1, &nullView);
   _pImmediateContext->OMSetRenderTargets(1, &null, lightDepthBuffer);
   _pImmediateContext->RSSetViewports(1, &lightVP);
   _pImmediateContext->ClearDepthStencilView(lightDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);

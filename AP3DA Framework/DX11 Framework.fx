@@ -11,6 +11,12 @@ Texture2D terrainTex4 : register(t4);
 SamplerState samLinear : register(s0);
 SamplerComparisonState shadowSampler : register(s1);
 
+//RasterizerState Depth {
+//  DepthBias = 100000;
+//  DepthBiasClamp = 0;
+//  SlopeScaledDepthBias = 1.0f;
+//};
+
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
@@ -96,7 +102,7 @@ struct DomainOut {
 };
 
 float calcShadowFactor(float4 shadowPos) {
-  float depth = shadowPos.z;
+  float depth = shadowPos.z - 0.002f;
 
   float dx = 1.0f / 2048.0f;
 
@@ -258,8 +264,8 @@ float4 PS(DomainOut input) : SV_Target
 {
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
-  shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
-  //shadowColour.r = calcShadowFactor(input.shadowPos);
+  //shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
+  shadowColour.r = calcShadowFactor(input.shadowPos);
 
   //return float4(depth, depth, depth, 1.0f);
   //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
@@ -292,14 +298,16 @@ float4 PS(DomainOut input) : SV_Target
   }
 
   // Compute the ambient, diffuse, and specular terms separately.
-  if (depth <= shadowColour.r) {
-    diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-    specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
-  }
-  else {
-    diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-    specular += shadowColour.r * (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
-  }
+  //if (depth <= shadowColour.r) {
+  //  diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  //  specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
+  //}
+  //else {
+  //  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  //  specular += shadowColour.r * (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
+  //}
+  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  specular += shadowColour.r * (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
   //specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
   //diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
   ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
@@ -323,8 +331,8 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
 {
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
-  shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
-  //shadowColour.r = calcShadowFactor(input.shadowPos);
+  //shadowColour = txDiffuse.Sample(samLinear, input.shadowPos.xy).rgb;
+  shadowColour.r = calcShadowFactor(input.shadowPos);
   //return float4(depth, depth, depth, 1.0f);
   //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
 
@@ -366,12 +374,13 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
   float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
 
   // Compute the ambient, diffuse, and specular terms separately.
-  if (depth <= shadowColour.r) {
-    diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  }
-  else {
-    diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  }
+  //if (depth <= shadowColour.r) {
+  //  diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  //}
+  //else {
+  //  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
+  //}
+  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
   ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
@@ -382,9 +391,3 @@ float4 TERRAIN_PS(DomainOut input) : SV_Target
 
   return finalColour;
 }
-
-//RasterizerState Depth {
-//  DepthBias = 100000;
-//  DepthBiasClamp = 0;
-//  SlopeScaledDepthBias = 1.0f;
-//};
