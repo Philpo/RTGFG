@@ -55,4 +55,15 @@
       <Filter>Resource Files\Textures</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ShadowMapping.fx">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="DeferredRendering.fx">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="GeneralShaders.fx">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
 </Project>

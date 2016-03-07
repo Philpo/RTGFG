@@ -2,7 +2,7 @@
 #include "Terrain.h"
 
 Camera::Camera(bool moveable, bool freeFlying, XMFLOAT3 position, XMFLOAT3 at, XMFLOAT3 up, FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth) :
-  moveable(moveable), freeFlying(freeFlying), _eye(position), _at(at), _worldUp(up), up(up), _windowWidth(windowWidth), _windowHeight(windowHeight), _nearDepth(nearDepth), _farDepth(farDepth) {
+  moveable(moveable), freeFlying(freeFlying), _eye(position), baseEye(position), _at(at), _worldUp(up), up(up), _windowWidth(windowWidth), _windowHeight(windowHeight), _nearDepth(nearDepth), _farDepth(farDepth) {
   XMStoreFloat3(&right, XMVector4Normalize(XMVector3Cross(XMLoadFloat3(&_worldUp), XMLoadFloat3(&_at))));
   Update();
 }
@@ -25,10 +25,12 @@ void Camera::Update() {
   }
 
   XMFLOAT4 eye = XMFLOAT4(_eye.x, _eye.y, _eye.z, 1.0f);
+  XMFLOAT4 base = XMFLOAT4(baseEye.x, baseEye.y, baseEye.z, 1.0f);
   XMFLOAT4 at = XMFLOAT4(_at.x, _at.y, _at.z, 1.0f);
   XMFLOAT4 up = XMFLOAT4(_worldUp.x, _worldUp.y, _worldUp.z, 0.0f);
 
   XMVECTOR EyeVector = XMLoadFloat4(&eye);
+  XMVECTOR baseVector = XMLoadFloat4(&base);
   XMVECTOR AtVector = XMLoadFloat4(&at);
   XMVECTOR UpVector = XMLoadFloat4(&up);
 
@@ -36,9 +38,9 @@ void Camera::Update() {
 
   XMFLOAT4 l = { 0.0f, 0.0f, 1.0f, 0.0f };
   XMVECTOR L = XMLoadFloat4(&l);
-  XMVECTOR lookAt = EyeVector + L;
+  XMVECTOR lookAt = baseVector + L;
 
-  XMStoreFloat4x4(&basicView, XMMatrixLookAtLH(EyeVector, lookAt, UpVector));
+  XMStoreFloat4x4(&basicView, XMMatrixLookAtLH(baseVector, lookAt, UpVector));
 
   // Initialize the projection matrix
   XMStoreFloat4x4(&_projection, XMMatrixPerspectiveFovLH(XM_PIDIV2, _windowWidth / _windowHeight, _nearDepth, _farDepth));

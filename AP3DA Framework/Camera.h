@@ -12,7 +12,7 @@ class Camera {
 private:
   bool moveable, freeFlying;
 
-  XMFLOAT3 _eye;
+  XMFLOAT3 _eye, baseEye;
   XMFLOAT3 _at;
   XMFLOAT3 _worldUp;
   XMFLOAT3 right, up;
@@ -41,6 +41,7 @@ public:
   XMFLOAT3 GetPosition() const { return _eye; }
   XMFLOAT3 GetLookAt() const { return _at; }
   XMFLOAT3 GetUp() const { return _worldUp; }
+  XMFLOAT3 getRight() const { return right; }
 
   void SetPosition(XMFLOAT3 position) { _eye = position; }
   void SetLookAt(XMFLOAT3 lookAt) { _at = lookAt; }
