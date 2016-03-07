@@ -83,7 +83,7 @@ Application::Application() : lastMousePosX(0.0f), lastMousePosY(0.0f) {
   _pSwapChain = nullptr;
   _pRenderTargetView = nullptr;
   _pVertexShader = nullptr;
-  _pPixelShader = nullptr;
+  shadowPixelShader = nullptr;
   _pVertexLayout = nullptr;
   _pVertexBuffer = nullptr;
   _pIndexBuffer = nullptr;
@@ -220,7 +220,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
   basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
   basicLight.SpecularPower = 20.0f;
-  basicLight.LightVecW = XMFLOAT3(-0.5f, 1.0f, -1.0f);
+  basicLight.LightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
 
   Geometry cubeGeometry;
   cubeGeometry.indexBuffer = _pIndexBuffer;
@@ -251,11 +251,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   ocean->setGeometry(planeGeometry);
   ocean->SetPosition(-106.0f, -64.9f, -106.0f);
 
-  GameObject * gameObject;// = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
-  //gameObject->SetPosition(-200.0f, -72.0f, -200.0f);
-  //gameObject->SetTextureRV(_pTextureRV);
+  GameObject * gameObject = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
+  gameObject->SetPosition(0.0f, 2.0f, -2.0f);
+  gameObject->SetTextureRV(_pTextureRV);
 
-  //_gameObjects.push_back(gameObject);
+  _gameObjects.push_back(gameObject);
 
   //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
@@ -264,12 +264,12 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   //_gameObjects.push_back(gameObject);
 
-  Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  chunk->SetPosition(0.0, 0.0, 0.0);
-  chunk->perlinNoise2D(time(0), 8, 8, 4, 0.5, 4);
-  chunk->perlinNoise3D(time(0), 8, 8, 16, 4, 0.5, 1);
-  chunk->Update(0);
-  chunks.push_back(chunk);
+  //Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
+  //chunk->SetPosition(0.0, 0.0, 0.0);
+  //chunk->perlinNoise2D(time(0), 8, 8, 4, 0.5, 4);
+  //chunk->perlinNoise3D(time(0), 8, 8, 16, 4, 0.5, 1);
+  //chunk->Update(0);
+  //chunks.push_back(chunk);
 
   //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
   //chunk->SetPosition(-16.0, 0.0, 0.0);
@@ -289,7 +289,7 @@ HRESULT Application::InitShadersAndInputLayout() {
 
   // Compile the vertex shader
   ID3DBlob* pVSBlob = nullptr;
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "VS", "vs_4_0", &pVSBlob);
+  hr = CompileShaderFromFile(L"GeneralShaders.fx", "VS", "vs_4_0", &pVSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -305,24 +305,8 @@ HRESULT Application::InitShadersAndInputLayout() {
     return hr;
   }
 
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "DEFERRED_VS", "vs_4_0", &pVSBlob);
-
-  if (FAILED(hr)) {
-    MessageBox(nullptr,
-      L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-    return hr;
-  }
-
-  // Create the vertex shader
-  hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &deferredVertexShader);
-
-  if (FAILED(hr)) {
-    pVSBlob->Release();
-    return hr;
-  }
-
   ID3DBlob* instanceVSBlob = nullptr;
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "INSTANCE_VS", "vs_4_0", &instanceVSBlob);
+  hr = CompileShaderFromFile(L"GeneralShaders.fx", "INSTANCE_VS", "vs_4_0", &instanceVSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -341,7 +325,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   // Compile the hull shader
   ID3DBlob* pHSBlob = nullptr;
 
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "HS", "hs_5_0", &pHSBlob);
+  hr = CompileShaderFromFile(L"GeneralShaders.fx", "HS", "hs_5_0", &pHSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -359,7 +343,7 @@ HRESULT Application::InitShadersAndInputLayout() {
 
   // Compile the domain shader
   ID3DBlob* pDSBlob = nullptr;
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "DS", "ds_5_0", &pDSBlob);
+  hr = CompileShaderFromFile(L"GeneralShaders.fx", "DS", "ds_5_0", &pDSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -377,7 +361,7 @@ HRESULT Application::InitShadersAndInputLayout() {
 
   // Compile the pixel shader
   ID3DBlob* pPSBlob = nullptr;
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "PS", "ps_4_0", &pPSBlob);
+  hr = CompileShaderFromFile(L"ShadowMapping.fx", "SHADOW_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -386,13 +370,28 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
+  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "DEFERRED_PS", "ps_4_0", &pPSBlob);
+  hr = CompileShaderFromFile(L"ShadowMapping.fx", "SHADOW_TERRAIN_PS", "ps_4_0", &pPSBlob);
+
+  if (FAILED(hr)) {
+    MessageBox(nullptr,
+      L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+    return hr;
+  }
+
+  // Create the pixel shader
+  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowTerrainPixelShader);
+  pPSBlob->Release();
+
+  if (FAILED(hr))
+    return hr;
+
+  hr = CompileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -407,7 +406,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"DX11 Framework.fx", "TERRAIN_PS", "ps_4_0", &pPSBlob);
+  hr = CompileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_TERRAIN_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -416,7 +415,22 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &terrainPixelShader);
+  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredTerrainPixelShader);
+  pPSBlob->Release();
+
+  if (FAILED(hr))
+    return hr;
+
+  hr = CompileShaderFromFile(L"DeferredRendering.fx", "LIGHTING_PS", "ps_4_0", &pPSBlob);
+
+  if (FAILED(hr)) {
+    MessageBox(nullptr,
+      L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+    return hr;
+  }
+
+  // Create the pixel shader
+  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &lightingPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
@@ -476,21 +490,29 @@ HRESULT Application::InitShadersAndInputLayout() {
   sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
   hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
 
-  sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-  sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-  sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-  sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-  sampDesc.MipLODBias = 0.0f;
-  sampDesc.MaxAnisotropy = 1;
-  sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-  sampDesc.BorderColor[0] = 0;
-  sampDesc.BorderColor[1] = 0;
-  sampDesc.BorderColor[2] = 0;
-  sampDesc.BorderColor[3] = 0;
-  sampDesc.MinLOD = 0;
-  sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+  //sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+  //sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+  //sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+  //sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+  //sampDesc.MipLODBias = 0.0f;
+  //sampDesc.MaxAnisotropy = 1;
+  //sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+  //sampDesc.BorderColor[0] = 0;
+  //sampDesc.BorderColor[1] = 0;
+  //sampDesc.BorderColor[2] = 0;
+  //sampDesc.BorderColor[3] = 0;
+  //sampDesc.MinLOD = 0;
+  //sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &s);
+  //hr = _pd3dDevice->CreateSamplerState(&sampDesc, &s);
+
+  sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+  sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+  sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
+
+  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &shadowSampler);
 
   return hr;
 }
@@ -899,7 +921,6 @@ HRESULT Application::InitDevice() {
   }
 
   // Setup the viewport
-  D3D11_VIEWPORT vp;
   vp.Width = (FLOAT) _renderWidth;
   vp.Height = (FLOAT) _renderHeight;
   vp.MinDepth = 0.0f;
@@ -907,6 +928,13 @@ HRESULT Application::InitDevice() {
   vp.TopLeftX = 0;
   vp.TopLeftY = 0;
   _pImmediateContext->RSSetViewports(1, &vp);
+
+  lightVP.Width = 2048.0f;
+  lightVP.Height = 2048.0f;
+  lightVP.MinDepth = 0.0f;
+  lightVP.MaxDepth = 1.0f;
+  lightVP.TopLeftX = 0;
+  lightVP.TopLeftY = 0;
 
   InitShadersAndInputLayout();
 
@@ -947,6 +975,44 @@ HRESULT Application::InitDevice() {
   _pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
 
   _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+
+  depthStencilDesc.Width = 2048;
+  depthStencilDesc.Height = 2048;
+  depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+  depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+
+  ID3D11Texture2D* lightTex;
+  hr = _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &lightTex);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
+  viewDesc.Flags = 0;
+  viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+  viewDesc.Texture2D.MipSlice = 0;
+
+  hr = _pd3dDevice->CreateDepthStencilView(lightTex, &viewDesc, &lightDepthBuffer);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  D3D11_SHADER_RESOURCE_VIEW_DESC rViewDesc;
+  rViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+  rViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+  rViewDesc.Texture2D.MipLevels = depthStencilDesc.MipLevels;
+  rViewDesc.Texture2D.MostDetailedMip = 0;
+
+  hr = _pd3dDevice->CreateShaderResourceView(lightTex, &rViewDesc, &lightDepthView);
+
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  lightTex->Release();
 
   // Rasterizer
   D3D11_RASTERIZER_DESC cmdesc;
@@ -1028,7 +1094,7 @@ void Application::Cleanup() {
   if (_pVertexShader) _pVertexShader->Release();
   if (controlPointHullShader) controlPointHullShader->Release();
   if (domainShader) domainShader->Release();
-  if (_pPixelShader) _pPixelShader->Release();
+  if (shadowPixelShader) shadowPixelShader->Release();
   if (_pRenderTargetView) _pRenderTargetView->Release();
   if (_pSwapChain) _pSwapChain->Release();
   if (_pImmediateContext) _pImmediateContext->Release();
@@ -1092,16 +1158,79 @@ void Application::Update() {
   }
 }
 
-void Application::renderToTextures(ConstantBuffer& cb) {
-  _pImmediateContext->VSSetShader(deferredVertexShader, nullptr, 0);
-  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
-  ID3D11ShaderResourceView* null = nullptr;
-  _pImmediateContext->PSSetShaderResources(0, 1, &null);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
+void Application::shadowPass(ConstantBuffer& cb) {
+  ID3D11ShaderResourceView* nullView = nullptr;
+  _pImmediateContext->PSSetShaderResources(4, 1, &nullView);
+  _pImmediateContext->OMSetRenderTargets(1, &null, lightDepthBuffer);
+  _pImmediateContext->RSSetViewports(1, &lightVP);
+  _pImmediateContext->ClearDepthStencilView(lightDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+  sphere bounds;
+  bounds.centre = XMFLOAT3(0.0f, 0.0f, 0.0f);
+  float halfWidth = TERRAIN_WIDTH / 2.0f;
+  bounds.radius = sqrtf(halfWidth * halfWidth + halfWidth * halfWidth);
+
+  XMVECTOR lightDir = XMLoadFloat3(&basicLight.LightVecW);
+  XMVECTOR lightPos = 2.0f * bounds.radius * lightDir;
+  XMVECTOR targetPos = XMLoadFloat3(&bounds.centre);
+  XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+  XMMATRIX V = XMMatrixLookAtLH(lightPos, targetPos, up);
+
+  XMFLOAT3 sphereCenterLS;
+  XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, V));
+
+  // Ortho frustum in light space encloses scene.
+  float l = sphereCenterLS.x - bounds.radius;
+  float b = sphereCenterLS.y - bounds.radius;
+  float n = sphereCenterLS.z - bounds.radius;
+  float r = sphereCenterLS.x + bounds.radius;
+  float t = sphereCenterLS.y + bounds.radius;
+  float f = sphereCenterLS.z + bounds.radius;
+  XMMATRIX P = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+  XMMATRIX t1(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
+  XMMATRIX s = V * P * t1;
+
+  cb.View = XMMatrixTranspose(V);
+  cb.Projection = XMMatrixTranspose(P);
+  cb.shadowTransform = XMMatrixTranspose(s);
+
+  _pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+
+  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
+  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+
+  for (auto chunk : chunks) {
+    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+
+  // Render all scene objects
+  for (int i = 0; i < _gameObjects.size(); i++) {
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+}
+
+void Application::renderToTextures(ConstantBuffer& cb) {
+  ID3D11ShaderResourceView* nullView = nullptr;
+  _pImmediateContext->PSSetShaderResources(0, 1, &nullView);
+  _pImmediateContext->PSSetShaderResources(1, 1, &nullView);
   _pImmediateContext->OMSetRenderTargets(DEFERRED_BUFFERS, deferredRenderTargets, _depthStencilView);
   float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
 
@@ -1117,13 +1246,6 @@ void Application::renderToTextures(ConstantBuffer& cb) {
     _pImmediateContext->RSSetState(CWcullMode);
   }
 
-  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
-
   XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
 
@@ -1132,16 +1254,6 @@ void Application::renderToTextures(ConstantBuffer& cb) {
 
   cb.View = XMMatrixTranspose(view);
   cb.Projection = XMMatrixTranspose(projection);
-
-  cb.light = basicLight;
-  cb.EyePosW = cameras[selectedCamera]->GetPosition();
-  cb.gMaxTessFactor = 1.0f;
-  cb.gMinTessFactor = 1.0f;
-  cb.gMaxTessDistance = 1.0f;
-  cb.gMinTessDistance = 10.0f;
-
-  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
-  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
 
   // Get render material
   Material material = terrain->GetMaterial();
@@ -1154,12 +1266,11 @@ void Application::renderToTextures(ConstantBuffer& cb) {
   // Set world matrix
   cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
   cb.HasTexture = 1.0f;
-  _pImmediateContext->PSSetShader(terrainPixelShader, nullptr, 0);
-  _pImmediateContext->PSSetShaderResources(0, 1, &null);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
+  _pImmediateContext->PSSetShader(deferredTerrainPixelShader, nullptr, 0);
+  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV4);
 
   // Update constant buffer
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
@@ -1167,19 +1278,124 @@ void Application::renderToTextures(ConstantBuffer& cb) {
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
 
   // Draw object
-  //terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
 
+  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
   _pImmediateContext->IASetInputLayout(instanceLayout);
   _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 
   for (auto chunk : chunks) {
     chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(deferredVertexShader, nullptr, 0);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+
+  // Render all scene objects
+  for (int i = 0; i < _gameObjects.size(); i++) {
+    // Get render material
+    //material = _gameObjects[i]->GetMaterial();
+
+    //// Copy material to shader
+    //cb.surface.AmbientMtrl = material.ambient;
+    //cb.surface.DiffuseMtrl = material.diffuse;
+    //cb.surface.SpecularMtrl = material.specular;
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
+
+    // Set texture
+    if (_gameObjects[i]->HasTexture()) {
+      ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
+      _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+      cb.HasTexture = 1.0f;
+    }
+    else {
+      cb.HasTexture = 0.0f;
+    }
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+}
+
+void Application::shadowMapping() {
+  ConstantBuffer cb;
+
+  _pImmediateContext->RSSetState(CWcullMode);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
+  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+  _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+
+  cb.light = basicLight;
+  cb.EyePosW = cameras[selectedCamera]->GetPosition();
+  cb.gMaxTessFactor = 1.0f;
+  cb.gMinTessFactor = 1.0f;
+  cb.gMaxTessDistance = 1.0f;
+  cb.gMinTessDistance = 10.0f;
+
+  shadowPass(cb);
+
+  if (_wireFrame) {
+    _pImmediateContext->RSSetState(wireframe);
+  }
+  else {
+    _pImmediateContext->RSSetState(CWcullMode);
+  }
+
+  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView); 
+  _pImmediateContext->RSSetViewports(1, &vp);
+  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
+  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+  _pImmediateContext->PSSetShaderResources(4, 1, &lightDepthView);
+
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
+
+  XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
+  XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+
+  cb.View = XMMatrixTranspose(view);
+  cb.Projection = XMMatrixTranspose(projection);
+
+  Material material = terrain->GetMaterial();
+  cb.surface.AmbientMtrl = material.ambient;
+  cb.surface.DiffuseMtrl = material.diffuse;
+  cb.surface.SpecularMtrl = material.specular;
+  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
+  cb.HasTexture = 1.0f;
+  _pImmediateContext->PSSetShader(shadowTerrainPixelShader, nullptr, 0);
+  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV4);
+  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+  // Draw object
+  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+
+  _pImmediateContext->PSSetShader(shadowPixelShader, nullptr, 0);
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+
+  for (auto chunk : chunks) {
+    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
 
   // Render all scene objects
   for (int i = 0; i < _gameObjects.size(); i++) {
@@ -1210,38 +1426,43 @@ void Application::renderToTextures(ConstantBuffer& cb) {
     // Draw object
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
-
-  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
 }
 
-void Application::Draw() {
-  //
-  // Clear buffers
-  //
+void Application::deferredRendering() {
   ConstantBuffer cb;
-  renderToTextures(cb);
 
-  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
-
-  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-  _pImmediateContext->RSSetState(CWcullMode);
   _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  _pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
-  _pImmediateContext->HSSetShader(nullptr, nullptr, 0);
-  _pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
   _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetSamplers(0, 1, &s);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
+  _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+  _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
+  cb.light = basicLight;
+  cb.EyePosW = cameras[selectedCamera]->GetPosition();
+  cb.gMaxTessFactor = 1.0f;
+  cb.gMinTessFactor = 1.0f;
+  cb.gMaxTessDistance = 1.0f;
+  cb.gMinTessDistance = 10.0f;
+
+  renderToTextures(cb);
+
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+  _pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+  _pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+  _pImmediateContext->PSSetShader(lightingPixelShader, nullptr, 0);
+
+  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
+  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
+  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+  _pImmediateContext->RSSetState(CWcullMode);
   _pImmediateContext->PSSetShaderResources(0, 1, &deferredResourceViews[0]);
   _pImmediateContext->PSSetShaderResources(1, 1, &deferredResourceViews[1]);
-  //_pImmediateContext->PSSetShaderResources(2, 1, &deferredResourceViews[2]);
-  //_pImmediateContext->PSSetShaderResources(3, 1, &deferredResourceViews[3]);
-  //_pImmediateContext->PSSetShaderResources(4, 1, &deferredResourceViews[4]);
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
   XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetBasicView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getOrthoProjection();
@@ -1253,45 +1474,24 @@ void Application::Draw() {
   cb.World = XMMatrixTranspose(world);
   cb.View = XMMatrixTranspose(view);
   cb.Projection = XMMatrixTranspose(projection);
-  cb.light = basicLight;
-  cb.EyePosW = cameras[selectedCamera]->GetPosition();
+  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
   UINT stride = sizeof(SimpleVertex);
   UINT offset = 0;
-  
-  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
   _pImmediateContext->IASetVertexBuffers(0, 1, &fullScreenVertexBuffer, &stride, &offset);
   _pImmediateContext->IASetIndexBuffer(fullScreenIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
   _pImmediateContext->DrawIndexed(6, 0, 0);
+}
 
-  //float blendFactors[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-  //_pImmediateContext->OMSetBlendState(Transparency, blendFactors, 0xffffffff);
-  //if (_wireFrame) {
-  //  _pImmediateContext->RSSetState(RSCullNoneWireFrame);
-  //}
-  //else {
-  //  _pImmediateContext->RSSetState(RSCullNone);
-  //}
+void Application::Draw() {
+  //
+  // Clear buffers
+  //
 
-  //material = ocean->GetMaterial();
-
-  //// Copy material to shader
-  //cb.surface.AmbientMtrl = material.ambient;
-  //cb.surface.DiffuseMtrl = material.diffuse;
-  //cb.surface.SpecularMtrl = material.specular;
-
-  //// Set world matrix
-  //cb.World = XMMatrixTranspose(ocean->GetWorldMatrix());
-  //cb.HasTexture = 0.0f;
-
-  //// Update constant buffer
-  //_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-
-  //// Draw object
-  ////ocean->Draw(_pImmediateContext);
-
-  //_pImmediateContext->OMSetBlendState(nullptr, blendFactors, 0xffffffff);
+  //shadowMapping();
+  deferredRendering();
 
   //
   // Present our back buffer to our front buffer

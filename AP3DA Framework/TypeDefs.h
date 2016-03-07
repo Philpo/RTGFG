@@ -34,9 +34,9 @@ struct ConstantBuffer {
   XMMATRIX World;
   XMMATRIX View;
   XMMATRIX Projection;
+  XMMATRIX shadowTransform;
 
   SurfaceInfo surface;
-
   Light light;
 
   XMFLOAT3 EyePosW;

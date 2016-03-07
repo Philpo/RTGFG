@@ -22,6 +22,11 @@
 using namespace noise;
 using namespace DirectX;
 
+struct sphere {
+  XMFLOAT3 centre;
+  float radius;
+};
+
 class Application {
 private:
   HINSTANCE               _hInst;
@@ -37,10 +42,11 @@ private:
   ID3D11ShaderResourceView* deferredResourceViews[DEFERRED_BUFFERS];
   ID3D11VertexShader*     _pVertexShader;
   ID3D11VertexShader* instanceVertexShader;
-  ID3D11VertexShader* deferredVertexShader;
-  ID3D11PixelShader*      _pPixelShader;
-  ID3D11PixelShader*      terrainPixelShader;
+  ID3D11PixelShader*      shadowPixelShader;
+  ID3D11PixelShader*      shadowTerrainPixelShader;
   ID3D11PixelShader*      deferredPixelShader;
+  ID3D11PixelShader*      deferredTerrainPixelShader;
+  ID3D11PixelShader*      lightingPixelShader;
   ID3D11HullShader* controlPointHullShader;
   ID3D11DomainShader* domainShader;
   ID3D11InputLayout*      _pVertexLayout;
@@ -62,6 +68,8 @@ private:
 
   ID3D11DepthStencilView* _depthStencilView = nullptr;
   ID3D11Texture2D* _depthStencilBuffer = nullptr;
+  ID3D11DepthStencilView* lightDepthBuffer = nullptr;
+  ID3D11RenderTargetView* null = nullptr;
 
   ID3D11ShaderResourceView * _pTextureRV = nullptr;
   ID3D11ShaderResourceView * terrainTextureRV1 = nullptr;
@@ -70,9 +78,12 @@ private:
   ID3D11ShaderResourceView * terrainTextureRV4 = nullptr;
   ID3D11ShaderResourceView * terrainTextureRV5 = nullptr;
   ID3D11ShaderResourceView * blendMap = nullptr;
+  ID3D11ShaderResourceView* lightDepthView = nullptr;
+
+  D3D11_VIEWPORT vp, lightVP;
 
   ID3D11SamplerState * _pSamplerLinear = nullptr;
-  ID3D11SamplerState* s;
+  ID3D11SamplerState* shadowSampler;
 
   Light basicLight;
 
@@ -132,7 +143,10 @@ public:
   void handleMouseClick(WPARAM buttonStates, int x, int y);
 
   void Update();
+  void shadowPass(ConstantBuffer& cb);
   void renderToTextures(ConstantBuffer& cb);
+  void shadowMapping();
+  void deferredRendering();
   void Draw();
   inline void setWindowCaption(const std::wostringstream& caption) const { SetWindowText(_hWnd, caption.str().c_str()); }
 };
