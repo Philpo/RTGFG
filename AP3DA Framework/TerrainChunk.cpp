@@ -3,7 +3,7 @@
 
 using namespace std;
 
-TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int height, int width, int terrainWidth, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) : GameObject("terrain_chunk", material), immediateContext(immediateContext) {
+TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int height, int width, int terrainWidth, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) : GameObject("terrain_chunk", material), height(height), width(width), visible(true), immediateContext(immediateContext) {
   numMipLevels = terrainWidth != width ? (terrainWidth / width) - 1 : 1;
   currentMipLevel = 0;
   indices = new UINT*[numMipLevels];
@@ -71,6 +71,12 @@ TerrainChunk::~TerrainChunk() {
   delete[] numberOfIndices;
 }
 
+void TerrainChunk::setBoundingBox(XMFLOAT3 topLeft) {
+  boundingBox.topLeft = topLeft;
+  boundingBox.width = width;
+  boundingBox.height = height;
+}
+
 void TerrainChunk::setCameraPosition(XMFLOAT3 cameraPosition) {
   if (this->cameraPosition.x == cameraPosition.x && this->cameraPosition.y == cameraPosition.y && this->cameraPosition.z == cameraPosition.z) {
     cameraMoved = false;
@@ -82,55 +88,59 @@ void TerrainChunk::setCameraPosition(XMFLOAT3 cameraPosition) {
 }
 
 void TerrainChunk::Update(float t) {
-  GameObject::Update(t);
+  if (visible) {
+    GameObject::Update(t);
 
-  if (cameraMoved) {
-    XMVECTOR toCamera = XMLoadFloat3(&centre) - XMLoadFloat3(&cameraPosition);
-    XMFLOAT3 distanceToCamera;
-    XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
+    if (cameraMoved) {
+      XMVECTOR toCamera = XMLoadFloat3(&centre) - XMLoadFloat3(&cameraPosition);
+      XMFLOAT3 distanceToCamera;
+      XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
 
-    cout << "dist " << distanceToCamera.x << endl;
+      cout << "dist " << distanceToCamera.x << endl;
 
-    int newMipLevel = currentMipLevel;
+      int newMipLevel = currentMipLevel;
 
-    for (int i = 0; i < numMipLevels; i++) {
-      if (distanceToCamera.x > mipMapDistances[i] && (i == numMipLevels - 1 || distanceToCamera.x <= mipMapDistances[i + 1])) {
-        newMipLevel = i;
-        break;
+      for (int i = 0; i < numMipLevels; i++) {
+        if (distanceToCamera.x > mipMapDistances[i] && (i == numMipLevels - 1 || distanceToCamera.x <= mipMapDistances[i + 1])) {
+          newMipLevel = i;
+          break;
+        }
       }
-    }
 
-    if (currentMipLevel != newMipLevel) {
-      D3D11_MAPPED_SUBRESOURCE mappedData;
-      immediateContext->Map(indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-      UINT* data = reinterpret_cast<UINT*>(mappedData.pData);
+      if (currentMipLevel != newMipLevel) {
+        D3D11_MAPPED_SUBRESOURCE mappedData;
+        immediateContext->Map(indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+        UINT* data = reinterpret_cast<UINT*>(mappedData.pData);
 
-      for (int i = 0; i < numberOfIndices[newMipLevel]; i++) {
-        data[i] = indices[newMipLevel][i];
+        for (int i = 0; i < numberOfIndices[newMipLevel]; i++) {
+          data[i] = indices[newMipLevel][i];
+        }
+        immediateContext->Unmap(indexBuffer, 0);
+        currentMipLevel = newMipLevel;
       }
-      immediateContext->Unmap(indexBuffer, 0);
-      currentMipLevel = newMipLevel;
     }
   }
 }
 
 void TerrainChunk::Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
-  UINT stride = sizeof(SimpleVertex);
-  UINT offset = 0;
+  if (visible) {
+    UINT stride = sizeof(SimpleVertex);
+    UINT offset = 0;
 
-  Material material = GetMaterial();
+    Material material = GetMaterial();
 
-  // Copy material to shader
-  cb.surface.AmbientMtrl = material.ambient;
-  cb.surface.DiffuseMtrl = material.diffuse;
-  cb.surface.SpecularMtrl = material.specular;
+    // Copy material to shader
+    cb.surface.AmbientMtrl = material.ambient;
+    cb.surface.DiffuseMtrl = material.diffuse;
+    cb.surface.SpecularMtrl = material.specular;
 
-  // Set texture
-  cb.HasTexture = 1.0f;
-  cb.World = GetWorldMatrix();
+    // Set texture
+    cb.HasTexture = 1.0f;
+    cb.World = GetWorldMatrix();
 
-  // Update constant buffer
-  pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
-  pImmediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-  pImmediateContext->DrawIndexed(numberOfIndices[currentMipLevel], 0, 0);
+    // Update constant buffer
+    pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
+    pImmediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    pImmediateContext->DrawIndexed(numberOfIndices[currentMipLevel], 0, 0);
+  }
 }

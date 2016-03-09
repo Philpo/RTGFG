@@ -1140,7 +1140,31 @@ void Application::Update() {
   XMStoreFloat3(&basicLight.LightVecW, toLight);
 
   // Update objects
+
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
+
+  XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
+  XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+
+  XMFLOAT4X4 vp;
+  XMStoreFloat4x4(&vp, XMMatrixMultiply(XMMatrixTranspose(projection), XMMatrixTranspose(view)));
+  XMFLOAT4 leftPlane = { -vp._11 - vp._41, -vp._12 - vp._42, -vp._13 - vp._43, -vp._14 - vp._44 };
+  XMFLOAT4 rightPlane = { vp._11 - vp._41, vp._12 - vp._42, vp._13 - vp._43, vp._14 - vp._44 };
+  XMFLOAT4 bottomPlane = { -vp._21 - vp._41, -vp._22 - vp._42, -vp._23 - vp._43, -vp._24 - vp._44 };
+  XMFLOAT4 topPlane = { vp._21 - vp._41, vp._22 - vp._42, vp._23 - vp._43, vp._24 - vp._44 };
+  XMFLOAT4 nearPlane = { -vp._31 - vp._41, -vp._32 - vp._42, -vp._33 - vp._43, -vp._34 - vp._44 };
+  XMFLOAT4 farPlane = { vp._31 - vp._41, vp._32 - vp._42, vp._33 - vp._43, vp._34 - vp._44 };
+
+  XMStoreFloat4(&leftPlane, XMVector4Normalize(XMLoadFloat4(&leftPlane)));
+  XMStoreFloat4(&rightPlane, XMVector4Normalize(XMLoadFloat4(&rightPlane)));
+  XMStoreFloat4(&topPlane, XMVector4Normalize(XMLoadFloat4(&topPlane)));
+  XMStoreFloat4(&bottomPlane, XMVector4Normalize(XMLoadFloat4(&bottomPlane)));
+  XMStoreFloat4(&nearPlane, XMVector4Normalize(XMLoadFloat4(&nearPlane)));
+  XMStoreFloat4(&farPlane, XMVector4Normalize(XMLoadFloat4(&farPlane)));
+
   terrain->setCameraPosition(cameras[selectedCamera]->GetPosition());
+  terrain->frustumCull(leftPlane, rightPlane, topPlane, bottomPlane, nearPlane, farPlane);
   terrain->Update(timeSinceStart);
   //for (auto chunk : chunks) {
   //  chunk->Update(timeSinceStart);

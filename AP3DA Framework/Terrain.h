@@ -29,6 +29,7 @@ public:
   void cleanupTerrain();
 
   void setCameraPosition(XMFLOAT3 cameraPosition);
+  void frustumCull(XMFLOAT4 leftPlane, XMFLOAT4 rightPlane, XMFLOAT4 topPlane, XMFLOAT4 bottomPlane, XMFLOAT4 nearPlane, XMFLOAT4 farPlane);
   void Update(float t) override;
   void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
 private:
