@@ -176,19 +176,21 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   voxelMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
   voxelMaterial.specularPower = 0.0f;
 
+  if (FAILED(InitDevice())) {
+    Cleanup();
+
+    return E_FAIL;
+  }
+
   terrain = new Terrain(noSpecMaterial);
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
   //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
   terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
-  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, CELL_WIDTH, CELL_DEPTH);
+  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
-  ocean = new Terrain(oceanMaterial);
-  //ocean->generateGeometry(OCEAN_DEPTH, OCEAN_WIDTH);
-
-  if (FAILED(InitDevice())) {
+  if (FAILED(initTerrainVertexBuffer())) {
     Cleanup();
-
     return E_FAIL;
   }
 
@@ -244,12 +246,6 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   terrain->setGeometry(planeGeometry);
   terrain->SetPosition(0.0f, 0.0f, 0.0f);
-
-  planeGeometry.indexBuffer = _pOceanPlaneIndexBuffer;
-  planeGeometry.vertexBuffer = _pOceanPlaneVertexBuffer;
-  planeGeometry.numberOfIndices = ocean->getNumIndices();
-  ocean->setGeometry(planeGeometry);
-  ocean->SetPosition(-106.0f, -64.9f, -106.0f);
 
   GameObject * gameObject = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
   gameObject->SetPosition(0.0f, 2.0f, -2.0f);
@@ -570,40 +566,6 @@ HRESULT Application::InitVertexBuffer() {
   if (FAILED(hr))
     return hr;
 
-  // Create vertex buffer
-  const SimpleVertex* planeVertices = terrain->getVertices();
-
-  ZeroMemory(&bd, sizeof(bd));
-  bd.Usage = D3D11_USAGE_DEFAULT;
-  bd.ByteWidth = sizeof(SimpleVertex) * terrain->getNumVertices();
-  bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-  bd.CPUAccessFlags = 0;
-
-  ZeroMemory(&InitData, sizeof(InitData));
-  InitData.pSysMem = planeVertices;
-
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneVertexBuffer);
-
-  if (FAILED(hr))
-    return hr;
-
-  // Create vertex buffer
-  planeVertices = ocean->getVertices();
-
-  ZeroMemory(&bd, sizeof(bd));
-  bd.Usage = D3D11_USAGE_DEFAULT;
-  bd.ByteWidth = sizeof(SimpleVertex) * ocean->getNumVertices();
-  bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-  bd.CPUAccessFlags = 0;
-
-  ZeroMemory(&InitData, sizeof(InitData));
-  InitData.pSysMem = planeVertices;
-
-  //hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pOceanPlaneVertexBuffer);
-
-  if (FAILED(hr))
-    return hr;
-
   float left = (float) ((1920.0f / 2.0f) * -1.0f);
 
   // Calculate the screen coordinates of the right side of the window.
@@ -641,6 +603,28 @@ HRESULT Application::InitVertexBuffer() {
     return hr;
 
   return S_OK;
+}
+
+HRESULT Application::initTerrainVertexBuffer() {
+  // Create vertex buffer
+  const SimpleVertex* planeVertices = terrain->getVertices();
+
+  D3D11_BUFFER_DESC bd;
+  D3D11_SUBRESOURCE_DATA InitData;
+
+  ZeroMemory(&bd, sizeof(bd));
+  bd.Usage = D3D11_USAGE_DEFAULT;
+  bd.ByteWidth = sizeof(SimpleVertex) * terrain->getNumVertices();
+  bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+  bd.CPUAccessFlags = 0;
+
+  ZeroMemory(&InitData, sizeof(InitData));
+  InitData.pSysMem = planeVertices;
+
+  HRESULT hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneVertexBuffer);
+
+  if (FAILED(hr))
+    return hr;
 }
 
 HRESULT Application::InitIndexBuffer() {
@@ -685,36 +669,36 @@ HRESULT Application::InitIndexBuffer() {
     return hr;
 
   // Create plane index buffer
-  const UINT* planeIndices = terrain->getIndices();
-
-  ZeroMemory(&bd, sizeof(bd));
-  bd.Usage = D3D11_USAGE_DEFAULT;
-  bd.ByteWidth = sizeof(UINT) * terrain->getNumIndices();
-  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-  bd.CPUAccessFlags = 0;
-
-  ZeroMemory(&InitData, sizeof(InitData));
-  InitData.pSysMem = planeIndices;
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneIndexBuffer);
-
-  if (FAILED(hr))
-    return hr;
-
-  // Create plane index buffer
-  planeIndices = ocean->getIndices();
-
-  ZeroMemory(&bd, sizeof(bd));
-  bd.Usage = D3D11_USAGE_DEFAULT;
-  bd.ByteWidth = sizeof(UINT) * ocean->getNumIndices();
-  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-  bd.CPUAccessFlags = 0;
-
-  ZeroMemory(&InitData, sizeof(InitData));
-  InitData.pSysMem = planeIndices;
-//  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pOceanPlaneIndexBuffer);
-
-  if (FAILED(hr))
-    return hr;
+//  const UINT* planeIndices = terrain->getIndices();
+//
+//  ZeroMemory(&bd, sizeof(bd));
+//  bd.Usage = D3D11_USAGE_DEFAULT;
+//  bd.ByteWidth = sizeof(UINT) * terrain->getNumIndices();
+//  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+//  bd.CPUAccessFlags = 0;
+//
+//  ZeroMemory(&InitData, sizeof(InitData));
+//  InitData.pSysMem = planeIndices;
+//  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneIndexBuffer);
+//
+//  if (FAILED(hr))
+//    return hr;
+//
+//  // Create plane index buffer
+//  planeIndices = ocean->getIndices();
+//
+//  ZeroMemory(&bd, sizeof(bd));
+//  bd.Usage = D3D11_USAGE_DEFAULT;
+//  bd.ByteWidth = sizeof(UINT) * ocean->getNumIndices();
+//  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+//  bd.CPUAccessFlags = 0;
+//
+//  ZeroMemory(&InitData, sizeof(InitData));
+//  InitData.pSysMem = planeIndices;
+////  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pOceanPlaneIndexBuffer);
+//
+//  if (FAILED(hr))
+//    return hr;
 
   UINT quadIndices[] =
   {
@@ -1087,8 +1071,8 @@ void Application::Cleanup() {
 
   if (_pVertexBuffer) _pVertexBuffer->Release();
   if (_pIndexBuffer) _pIndexBuffer->Release();
-  if (_pPlaneVertexBuffer) _pPlaneVertexBuffer->Release();
-  if (_pPlaneIndexBuffer) _pPlaneIndexBuffer->Release();
+  //if (_pPlaneVertexBuffer) _pPlaneVertexBuffer->Release();
+  //if (_pPlaneIndexBuffer) _pPlaneIndexBuffer->Release();
 
   if (_pVertexLayout) _pVertexLayout->Release();
   if (_pVertexShader) _pVertexShader->Release();
@@ -1123,6 +1107,10 @@ void Application::Cleanup() {
 
 void Application::Update() {
   // Update our time
+  static float t = 0.0f;
+
+  t += (float) XM_PI * 0.0000000125f;
+
   static float timeSinceStart = 0.0f;
   static DWORD dwTimeStart = 0;
 
@@ -1147,9 +1135,13 @@ void Application::Update() {
   //cameras[selectedCamera]->SetPosition(cameraPos);
   cameras[selectedCamera]->Update();
 
+  XMVECTOR toLight = XMLoadFloat3(&basicLight.LightVecW);
+  toLight = XMVector3Transform(toLight, XMMatrixRotationY(t));
+  XMStoreFloat3(&basicLight.LightVecW, toLight);
+
   // Update objects
+  terrain->setCameraPosition(cameras[selectedCamera]->GetPosition());
   terrain->Update(timeSinceStart);
-  ocean->Update(timeSinceStart);
   //for (auto chunk : chunks) {
   //  chunk->Update(timeSinceStart);
   //}
@@ -1327,15 +1319,15 @@ void Application::shadowMapping() {
 
   _pImmediateContext->RSSetState(CWcullMode);
   _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
-  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
+  //_pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  //_pImmediateContext->DSSetShader(domainShader, nullptr, 0);
   _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
   _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
   _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
   cb.light = basicLight;
   cb.EyePosW = cameras[selectedCamera]->GetPosition();

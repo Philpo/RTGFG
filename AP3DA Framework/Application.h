@@ -58,9 +58,6 @@ private:
   ID3D11Buffer*           _pPlaneVertexBuffer;
   ID3D11Buffer*           _pPlaneIndexBuffer;
 
-  ID3D11Buffer*           _pOceanPlaneVertexBuffer;
-  ID3D11Buffer*           _pOceanPlaneIndexBuffer;
-
   ID3D11Buffer*           fullScreenVertexBuffer;
   ID3D11Buffer*           fullScreenIndexBuffer;
 
@@ -114,11 +111,9 @@ private:
   ID3D11RasterizerState* wireframe;
 
   bool _wireFrame = false;
-  Terrain *terrain, *ocean;
+  Terrain *terrain;
   const float TERRAIN_WIDTH = 512.0f;
   const float TERRAIN_DEPTH = 512.0f;
-  const float OCEAN_WIDTH = 300.0f;
-  const float OCEAN_DEPTH = 325.0f;
   const float CELL_WIDTH = 1.0f;
   const float CELL_DEPTH = 1.0f;
   int lastMousePosX, lastMousePosY;
@@ -130,6 +125,7 @@ private:
   HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
   HRESULT InitShadersAndInputLayout();
   HRESULT InitVertexBuffer();
+  HRESULT initTerrainVertexBuffer();
   HRESULT InitIndexBuffer();
 
 public:

@@ -383,6 +383,7 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="noiseutils.cpp" />
     <ClCompile Include="Terrain.cpp" />
+    <ClCompile Include="TerrainChunk.cpp" />
     <ClCompile Include="Voxel.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -427,6 +428,7 @@
     <ClInclude Include="noiseutils.h" />
     <CLInclude Include="resource.h" />
     <ClInclude Include="Terrain.h" />
+    <ClInclude Include="TerrainChunk.h" />
     <ClInclude Include="TypeDefs.h" />
     <ClInclude Include="Voxel.h" />
     <ResourceCompile Include="DX11 Framework.rc" />

@@ -23,6 +23,7 @@
     <ClInclude Include="Chunk.h" />
     <ClInclude Include="Voxel.h" />
     <ClInclude Include="TypeDefs.h" />
+    <ClInclude Include="TerrainChunk.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -34,6 +35,7 @@
     <ClCompile Include="noiseutils.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Voxel.cpp" />
+    <ClCompile Include="TerrainChunk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

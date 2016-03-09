@@ -11,7 +11,7 @@ float randFloat(float min, float max);
 int randInt(int min, int max);
 float parabola(int centreX, int centreZ, int pointX, int pointZ, int radius);
 
-Terrain::Terrain(Material material) : GameObject("terrain", material), vertices(nullptr), indices(nullptr), heightMap(nullptr) {}
+Terrain::Terrain(Material material) : GameObject("terrain", material), material(material), vertices(nullptr), indices(nullptr), heightMap(nullptr) {}
 
 Terrain::~Terrain() {
   if (vertices) {
@@ -28,6 +28,29 @@ Terrain::~Terrain() {
       delete[] heightMap2;
     }
     delete[] heightMap2;
+  }
+
+  for (auto chunk : chunks) {
+    delete chunk;
+  }
+}
+
+void Terrain::setCameraPosition(XMFLOAT3 cameraPosition) {
+  for (auto chunk : chunks) {
+    chunk->setCameraPosition(cameraPosition);
+  }
+}
+
+void Terrain::Update(float t) {
+  for (auto chunk : chunks) {
+    chunk->Update(t);
+  }
+}
+
+void Terrain::Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
+  pImmediateContext->IASetVertexBuffers(0, 1, &_geometry.vertexBuffer, &_geometry.vertexBufferStride, &_geometry.vertexBufferOffset);
+  for (auto chunk : chunks) {
+    chunk->Draw(cb, constantBuffer, pImmediateContext);
   }
 }
 
@@ -330,7 +353,7 @@ void Terrain::perlinNoise(int height, int width, double lowerXBound, double uppe
   }
 }
 
-void Terrain::generateGeometry(int height, int width, float cellWidth, float cellDepth) {
+void Terrain::generateGeometry(int height, int width, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth, float cellDepth) {
   terrainHeight = height;
   terrainWidth = width;
   dX = cellWidth;
@@ -339,8 +362,9 @@ void Terrain::generateGeometry(int height, int width, float cellWidth, float cel
   numIndices = height * width * 6;
 
   generateVertices();
-  generateIndices();
+  generateIndices(device, immediateContext);
   generateNormals();
+  setChunkCentres();
 }
 
 void Terrain::generateVertices() {
@@ -362,49 +386,74 @@ void Terrain::generateVertices() {
   }
 }
 
-void Terrain::generateIndices() {
-  if (!indices) {
-    indices = new UINT[numIndices];
-    int indicesIndex = 0;
-    for (int i = 0; i < terrainHeight; i++) {
-      for (int j = 0; j < terrainWidth; j++) {
-        // triangle 1
-        indices[indicesIndex++] = (i * (terrainWidth + 1)) + j;
-        indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
-        indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
-        // triangle 2
-        indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
-        indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
-        indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j + 1;
-      }
+void Terrain::generateIndices(ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) {
+  for (int i = 0; i < terrainHeight / CHUNK_HEIGHT; i++) {
+    for (int j = 0; j < terrainWidth / CHUNK_WIDTH; j++) {
+      TerrainChunk* chunk = new TerrainChunk(material, j, i, CHUNK_HEIGHT, CHUNK_WIDTH, terrainWidth, device, immediateContext);
+      chunk->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+      chunks.push_back(chunk);
     }
   }
+  //if (!indices) {
+  //  indices = new UINT[numIndices];
+  //  int indicesIndex = 0;
+  //  for (int i = 0; i < terrainHeight; i++) {
+  //    for (int j = 0; j < terrainWidth; j++) {
+  //      // triangle 1
+  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j;
+  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
+  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
+  //      // triangle 2
+  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
+  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
+  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j + 1;
+  //    }
+  //  }
+  //}
 }
 
 void Terrain::generateNormals() {
-  for (int i = 0; i < numIndices / 3; i++) {
-    UINT index1 = indices[i * 3];
-    UINT index2 = indices[i * 3 + 1];
-    UINT index3 = indices[i * 3 + 2];
+  int numChunkIndices = CHUNK_HEIGHT * CHUNK_WIDTH * 6;
 
-    SimpleVertex& v1 = vertices[index1];
-    SimpleVertex& v2 = vertices[index2];
-    SimpleVertex& v3 = vertices[index3];
+  for (auto chunk : chunks) {
+    for (int i = 0; i < numChunkIndices / 3; i++) {
+      UINT index1 = chunk->getIndices()[i * 3];
+      UINT index2 = chunk->getIndices()[i * 3 + 1];
+      UINT index3 = chunk->getIndices()[i * 3 + 2];
 
-    XMVECTOR v1PosVector = XMLoadFloat3(&v1.PosL);
-    XMVECTOR v2PosVector = XMLoadFloat3(&v2.PosL);
-    XMVECTOR v3PosVector = XMLoadFloat3(&v3.PosL);
-    XMVECTOR v1Tov2 = v2PosVector - v1PosVector;
-    XMVECTOR v1Tov3 = v3PosVector - v1PosVector;
-    XMVECTOR normal = XMVector3Cross(v1Tov2, v1Tov3);
+      SimpleVertex& v1 = vertices[index1];
+      SimpleVertex& v2 = vertices[index2];
+      SimpleVertex& v3 = vertices[index3];
 
-    XMStoreFloat3(&v1.NormL, XMLoadFloat3(&v1.NormL) + normal);
-    XMStoreFloat3(&v2.NormL, XMLoadFloat3(&v2.NormL) + normal);
-    XMStoreFloat3(&v3.NormL, XMLoadFloat3(&v3.NormL) + normal);
+      XMVECTOR v1PosVector = XMLoadFloat3(&v1.PosL);
+      XMVECTOR v2PosVector = XMLoadFloat3(&v2.PosL);
+      XMVECTOR v3PosVector = XMLoadFloat3(&v3.PosL);
+      XMVECTOR v1Tov2 = v2PosVector - v1PosVector;
+      XMVECTOR v1Tov3 = v3PosVector - v1PosVector;
+      XMVECTOR normal = XMVector3Cross(v1Tov2, v1Tov3);
+
+      XMStoreFloat3(&v1.NormL, XMLoadFloat3(&v1.NormL) + normal);
+      XMStoreFloat3(&v2.NormL, XMLoadFloat3(&v2.NormL) + normal);
+      XMStoreFloat3(&v3.NormL, XMLoadFloat3(&v3.NormL) + normal);
+    }
   }
 
   for (int i = 0; i < numVertices; i++) {
     XMStoreFloat3(&vertices[i].NormL, XMVector3Normalize(XMLoadFloat3(&vertices[i].NormL)));
+  }
+}
+
+void Terrain::setChunkCentres() {
+  for (auto chunk : chunks) {
+    UINT firstVertexIndex = chunk->getIndices()[0];
+    UINT lastVertexIndex = chunk->getIndices()[(CHUNK_HEIGHT * CHUNK_WIDTH * 6) - 1];
+
+    SimpleVertex firstVertex = vertices[firstVertexIndex];
+    SimpleVertex lastVertex = vertices[lastVertexIndex];
+    XMFLOAT3 firstPos = firstVertex.PosL;
+    XMFLOAT3 lastPos = lastVertex.PosL;
+    XMFLOAT3 centre { (firstPos.x + lastPos.x) / 2.0f, 0.0f, (firstPos.z + lastPos.z) / 2.0f };
+    chunk->setCentre(centre);
   }
 }
 

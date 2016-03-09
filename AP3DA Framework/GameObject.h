@@ -60,7 +60,7 @@ public:
   bool HasTexture() const { return _textureRV ? true : false; }
 
   void SetParent(GameObject * parent) { _parent = parent; }
-  void setGeometry(Geometry geometry) { _geometry = geometry; }
+  virtual void setGeometry(Geometry geometry) { _geometry = geometry; }
 
   virtual void Update(float t);
   virtual void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext);

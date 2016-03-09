@@ -78,7 +78,7 @@ float calcShadowFactor(float4 shadowPos) {
   return percentLit /= 9.0f;
 }
 
-float4 SHADOW_PS(DomainOut input) : SV_Target {
+float4 SHADOW_PS(VS_OUTPUT input) : SV_Target {
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
   //shadowColour = shadowMap.Sample(samLinear, input.shadowPos.xy).rgb;
@@ -144,7 +144,7 @@ float4 SHADOW_PS(DomainOut input) : SV_Target {
   return finalColour;
 }
 
-float4 SHADOW_TERRAIN_PS(DomainOut input) : SV_Target{
+float4 SHADOW_TERRAIN_PS(VS_OUTPUT input) : SV_Target{
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
   //shadowColour = shadowMap.Sample(samLinear, input.shadowPos.xy).rgb;
