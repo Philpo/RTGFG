@@ -83,7 +83,7 @@ void Camera::move(const float distance, const Terrain& terrain) {
     XMVECTOR newPosition = XMVectorAdd(XMLoadFloat4(&XMFLOAT4(_eye.x, _eye.y, _eye.z, 1.0f)), moveAmount);
     XMStoreFloat3(&_eye, newPosition);
     if (!freeFlying) {
-      float height = terrain.getCameraHeight(_eye.x, _eye.z) - 82.0f;
+      float height = terrain.getCameraHeight(_eye.x, _eye.z);
       _eye.y = height + 2.0f;
       //_at.y += height;
     }

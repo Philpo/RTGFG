@@ -186,7 +186,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
   //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
-  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+  double seed = time(0);
+  double seed2 = time(0);
+  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, seed - 4.0, seed, seed2 - 4.0, seed2);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {

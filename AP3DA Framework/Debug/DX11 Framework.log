@@ -1,8 +1,8 @@
-﻿Build started 09/03/2016 17:07:35.
+﻿Build started 09/03/2016 19:00:16.
      1>Project "G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\DX11 Framework.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\DirectXTK\Inc" /ZI /nologo /W4 /WX- /Od /Oi /Oy- /D WIN32 /D _DEBUG /D DEBUG /D PROFILE /D _WINDOWS /D _WIN32_WINNT=0x0600 /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /arch:SSE2 /fp:fast /Zc:wchar_t /Zc:forScope /openmp- /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt  Terrain.cpp
-         Terrain.cpp
+         E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\DirectXTK\Inc" /ZI /nologo /W4 /WX- /Od /Oi /Oy- /D WIN32 /D _DEBUG /D DEBUG /D PROFILE /D _WINDOWS /D _WIN32_WINNT=0x0600 /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /arch:SSE2 /fp:fast /Zc:wchar_t /Zc:forScope /openmp- /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt  Application.cpp
+         Application.cpp
      1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\libnoise\include\noise\module\modulebase.h(351): warning C4100: 'm' : unreferenced formal parameter
      1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\libnoise\include\noise\module\const.h(81): warning C4100: 'z' : unreferenced formal parameter
      1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\libnoise\include\noise\module\const.h(81): warning C4100: 'y' : unreferenced formal parameter
@@ -10,35 +10,20 @@
      1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\noiseutils.h(1217): warning C4244: 'initializing' : conversion from 'const double' to 'float', possible loss of data
      1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.h(148): warning C4512: 'Application' : assignment operator could not be generated
                  g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.h(30) : see declaration of 'Application'
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(76): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(78): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(80): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(82): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(84): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(86): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(90): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(92): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(94): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(96): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(98): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(100): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(104): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(106): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(108): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(110): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(112): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(114): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(45): warning C4101: 'dotProduct' : unreferenced local variable
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(164): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(165): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(212): warning C4018: '<' : signed/unsigned mismatch
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(459): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(460): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(484): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(494): warning C4244: 'argument' : conversion from 'float' to 'int', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(561): warning C4238: nonstandard extension used : class rvalue used as lvalue
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(568): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
-     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\terrain.cpp(664): warning C4244: 'return' : conversion from 'double' to 'float', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(48): warning C4389: '==' : signed/unsigned mismatch
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(65): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(66): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(76): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(106): warning C4996: 'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 e:\program files (x86)\microsoft visual studio 12.0\vc\include\stdio.h(226) : see declaration of 'freopen'
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(189): warning C4244: 'initializing' : conversion from 'time_t' to 'double', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(190): warning C4244: 'initializing' : conversion from 'time_t' to 'double', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(191): warning C4244: 'argument' : conversion from 'const float' to 'int', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(192): warning C4244: 'argument' : conversion from 'const float' to 'int', possible loss of data
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(1235): warning C4018: '<' : signed/unsigned mismatch
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(1313): warning C4018: '<' : signed/unsigned mismatch
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(1419): warning C4018: '<' : signed/unsigned mismatch
+     1>g:\documents\visual studio 2013\projects\rtgfg\ap3da framework\application.cpp(630): warning C4715: 'Application::initTerrainVertexBuffer' : not all control paths return a value
        Link:
          E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\Debug\DX11 Framework.exe" /INCREMENTAL /NOLOGO d2d1.lib d3d11.lib d3dcompiler.lib dxguid.lib winmm.lib libnoise.lib comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\Debug\DX11 Framework.pdb" /SUBSYSTEM:WINDOWS /LARGEADDRESSAWARE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"G:\Documents\Visual Studio 2013\Projects\RTGfG\AP3DA Framework\Debug\DX11 Framework.lib" /MACHINE:X86 /SAFESEH  "Debug\DX11 Framework.res"
          Debug\Application.obj
@@ -56,4 +41,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.15
+Time Elapsed 00:00:01.13

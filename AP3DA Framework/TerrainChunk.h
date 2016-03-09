@@ -3,7 +3,7 @@
 
 struct BoundingBox {
   XMFLOAT3 topLeft;
-  int width, height;
+  int width, height, depth;
 };
 
 class TerrainChunk : public GameObject {
@@ -16,7 +16,7 @@ public:
   BoundingBox getBoundingBox() const { return boundingBox; }
 
   void setVisible(bool visible) { this->visible = visible; }
-  void setBoundingBox(XMFLOAT3 topLeft);
+  void setBoundingBox(XMFLOAT3 topLeft, float height);
   void setCameraPosition(XMFLOAT3 cameraPosition);
   void setCentre(XMFLOAT3 centre) { this->centre = centre; }
   void Update(float t) override;

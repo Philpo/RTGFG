@@ -10,12 +10,8 @@ TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int heig
   numberOfIndices = new int[numMipLevels];
   mipMapDistances = new float[numMipLevels];
 
-  float distance = 50.0f;
   for (int i = 0; i < numMipLevels; i++) {
-    if (i > 0) {
-      distance *= 2;
-    }
-    mipMapDistances[i] = i * 50;
+    mipMapDistances[i] = i * width;
     numberOfIndices[i] = i != 0 ? height * width * 6 / (i * 2) : height * width * 6;
     indices[i] = new UINT[numberOfIndices[i]];
   }
@@ -71,10 +67,11 @@ TerrainChunk::~TerrainChunk() {
   delete[] numberOfIndices;
 }
 
-void TerrainChunk::setBoundingBox(XMFLOAT3 topLeft) {
+void TerrainChunk::setBoundingBox(XMFLOAT3 topLeft, float height) {
   boundingBox.topLeft = topLeft;
   boundingBox.width = width;
   boundingBox.height = height;
+  boundingBox.depth = this->height;
 }
 
 void TerrainChunk::setCameraPosition(XMFLOAT3 cameraPosition) {
@@ -95,8 +92,6 @@ void TerrainChunk::Update(float t) {
       XMVECTOR toCamera = XMLoadFloat3(&centre) - XMLoadFloat3(&cameraPosition);
       XMFLOAT3 distanceToCamera;
       XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
-
-      cout << "dist " << distanceToCamera.x << endl;
 
       int newMipLevel = currentMipLevel;
 
