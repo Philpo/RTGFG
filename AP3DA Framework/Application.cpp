@@ -1111,7 +1111,7 @@ void Application::Update() {
   // Update our time
   static float t = 0.0f;
 
-  t += (float) XM_PI * 0.0000000125f;
+  t += (float) XM_PI * 0.000125f;
 
   static float timeSinceStart = 0.0f;
   static DWORD dwTimeStart = 0;
@@ -1137,7 +1137,7 @@ void Application::Update() {
   //cameras[selectedCamera]->SetPosition(cameraPos);
   cameras[selectedCamera]->Update();
 
-  XMVECTOR toLight = XMLoadFloat3(&basicLight.LightVecW);
+  XMVECTOR toLight = XMLoadFloat3(&XMFLOAT3(-0.57735f, 0.57735f, -0.57735f));
   toLight = XMVector3Transform(toLight, XMMatrixRotationY(t));
   XMStoreFloat3(&basicLight.LightVecW, toLight);
 
@@ -1508,8 +1508,8 @@ void Application::Draw() {
   // Clear buffers
   //
 
-  //shadowMapping();
-  deferredRendering();
+  shadowMapping();
+  //deferredRendering();
 
   //
   // Present our back buffer to our front buffer

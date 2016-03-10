@@ -612,7 +612,7 @@ void Terrain::setChunkCentres() {
     SimpleVertex lastVertex = vertices[lastVertexIndex];
     XMFLOAT3 firstPos = firstVertex.PosL;
     XMFLOAT3 lastPos = lastVertex.PosL;
-    XMFLOAT3 centre { (firstPos.x + lastPos.x) / 2.0f, 0.0f, (firstPos.z + lastPos.z) / 2.0f };
+    XMFLOAT3 centre { (firstPos.x + lastPos.x) / 2.0f, (firstPos.y + lastPos.y) / 2.0f, (firstPos.z + lastPos.z) / 2.0f };
     chunk->setCentre(centre);
 
     float highest = 0;
