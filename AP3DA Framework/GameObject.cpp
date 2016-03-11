@@ -40,7 +40,12 @@ void GameObject::Update(float t) {
   XMStoreFloat4x4(&_world, scale * rotation * translation);
 
   if (_parent != nullptr) {
-    XMStoreFloat4x4(&_world, this->GetWorldMatrix() * _parent->GetWorldMatrix());
+    XMMATRIX temp = XMMatrixIdentity();
+    temp *= XMMatrixRotationX(_parent->GetRotation().x);
+    temp *= XMMatrixRotationY(_parent->GetRotation().y);
+    temp *= XMMatrixRotationZ(_parent->GetRotation().z);
+    temp *= XMMatrixTranslation(_parent->GetPosition().x, _parent->GetPosition().y, _parent->GetPosition().z);
+    XMStoreFloat4x4(&_world, this->GetWorldMatrix() * temp);
   }
 }
 

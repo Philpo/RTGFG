@@ -382,6 +382,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="noiseutils.cpp" />
+    <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TerrainChunk.cpp" />
     <ClCompile Include="Voxel.cpp" />
@@ -427,6 +428,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="noiseutils.h" />
     <CLInclude Include="resource.h" />
+    <ClInclude Include="Skeleton.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="TerrainChunk.h" />
     <ClInclude Include="TypeDefs.h" />

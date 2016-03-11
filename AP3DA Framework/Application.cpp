@@ -48,6 +48,48 @@ bool Application::HandleKeyboard(MSG msg) {
         selectedCamera = selectedCamera == cameras.size() - 1 ? 0 : selectedCamera + 1;
       }
       return true;
+    case 0x57:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        rotation.x += XMConvertToRadians(-10.0f);
+        skeleton[1]->SetRotation(rotation);
+      }
+      return true;
+    case 0x53:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        rotation.x += XMConvertToRadians(10.0f);
+        skeleton[1]->SetRotation(rotation);
+      }
+      return true;
+    case 0x41:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        rotation.y += XMConvertToRadians(-10.0f);
+        skeleton[1]->SetRotation(rotation);
+      }
+      return true;
+    case 0x44:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        rotation.y += XMConvertToRadians(10.0f);
+        skeleton[1]->SetRotation(rotation);
+      }
+      return true;
+    case 0x45:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[0]->GetRotation();
+        rotation.x += XMConvertToRadians(-10.0f);
+        skeleton[0]->SetRotation(rotation);;
+      }
+      return true;
+    case 0x51:
+      if (msg.message == WM_KEYDOWN) {
+        XMFLOAT3 rotation = skeleton[0]->GetRotation();
+        rotation.x += XMConvertToRadians(10.0f);
+        skeleton[0]->SetRotation(rotation);
+      }
+      return true;
   }
 
   return false;
@@ -188,7 +230,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
   double seed = time(0);
   double seed2 = time(0);
-  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, seed - 4.0, seed, seed2 - 4.0, seed2);
+  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {
@@ -233,6 +275,13 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   cubeGeometry.vertexBufferOffset = 0;
   cubeGeometry.vertexBufferStride = sizeof(SimpleVertex);
 
+  Geometry skeletonGeometry;
+  skeletonGeometry.indexBuffer = _pIndexBuffer;
+  skeletonGeometry.vertexBuffer = skeletonVertexBuffer;
+  skeletonGeometry.numberOfIndices = 36;
+  skeletonGeometry.vertexBufferOffset = 0;
+  skeletonGeometry.vertexBufferStride = sizeof(SimpleVertex);
+
   Geometry planeGeometry;
   planeGeometry.indexBuffer = _pPlaneIndexBuffer;
   planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
@@ -253,7 +302,20 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   gameObject->SetPosition(0.0f, 2.0f, -2.0f);
   gameObject->SetTextureRV(_pTextureRV);
 
-  _gameObjects.push_back(gameObject);
+  //_gameObjects.push_back(gameObject);
+
+  GameObject* root = new GameObject("root", cubeGeometry, shinyMaterial);
+  root->SetPosition(0.0f, 2.0f, -2.0f);
+  root->SetScale(0.25f, 0.25f, 2.0f);
+  root->SetRotation(0.0f, 0.0f, 0.0f);
+  skeleton.push_back(root);
+
+  GameObject* node1 = new GameObject("node1", skeletonGeometry, shinyMaterial);
+  node1->SetParent(root);
+  node1->SetPosition(0.0f, 0.0f, 2.0f);
+  node1->SetRotation(0.0f, 0.0f, 0.0f);
+  node1->SetScale(0.25f, 0.25f, 2.0f);
+  skeleton.push_back(node1);
 
   //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
@@ -564,6 +626,47 @@ HRESULT Application::InitVertexBuffer() {
   InitData.pSysMem = vertices;
 
   hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pVertexBuffer);
+
+  if (FAILED(hr))
+    return hr;
+
+  SimpleVertex skeletonVertices[] =
+  {
+    { XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 2.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+    { XMFLOAT3(-1.0f, 1.0f, 2.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+
+    { XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+    { XMFLOAT3(1.0f, -1.0f, 2.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(-1.0f, -1.0f, 2.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+
+    { XMFLOAT3(-1.0f, -1.0f, 2.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+    { XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+    { XMFLOAT3(-1.0f, 1.0f, 2.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+
+    { XMFLOAT3(1.0f, -1.0f, 2.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 2.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+
+    { XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+    { XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+    { XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+
+    { XMFLOAT3(-1.0f, -1.0f, 2.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+    { XMFLOAT3(1.0f, -1.0f, 2.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+    { XMFLOAT3(1.0f, 1.0f, 2.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+    { XMFLOAT3(-1.0f, 1.0f, 2.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+  };
+
+  ZeroMemory(&InitData, sizeof(InitData));
+  InitData.pSysMem = skeletonVertices;
+
+  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &skeletonVertexBuffer);
 
   if (FAILED(hr))
     return hr;
@@ -1174,6 +1277,9 @@ void Application::Update() {
   for (auto gameObject : _gameObjects) {
     gameObject->Update(timeSinceStart);
   }
+  for (auto gameObject : skeleton) {
+    gameObject->Update(timeSinceStart);
+  }
 }
 
 void Application::shadowPass(ConstantBuffer& cb) {
@@ -1242,6 +1348,35 @@ void Application::shadowPass(ConstantBuffer& cb) {
 
     // Draw object
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  for (int i = 0; i < skeleton.size(); i++) {
+    // Get render material
+    //material = _gameObjects[i]->GetMaterial();
+
+    //// Copy material to shader
+    //cb.surface.AmbientMtrl = material.ambient;
+    //cb.surface.DiffuseMtrl = material.diffuse;
+    //cb.surface.SpecularMtrl = material.specular;
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(skeleton[i]->GetWorldMatrix());
+
+    // Set texture
+    //if (_gameObjects[i]->HasTexture()) {
+    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
+    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+    //  cb.HasTexture = 1.0f;
+    //}
+    //else {
+    cb.HasTexture = 0.0f;
+    //}
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    skeleton[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 }
 
@@ -1443,6 +1578,35 @@ void Application::shadowMapping() {
 
     // Draw object
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  for (int i = 0; i < skeleton.size(); i++) {
+    // Get render material
+    //material = _gameObjects[i]->GetMaterial();
+
+    //// Copy material to shader
+    //cb.surface.AmbientMtrl = material.ambient;
+    //cb.surface.DiffuseMtrl = material.diffuse;
+    //cb.surface.SpecularMtrl = material.specular;
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(skeleton[i]->GetWorldMatrix());
+
+    // Set texture
+    //if (_gameObjects[i]->HasTexture()) {
+    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
+    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+    //  cb.HasTexture = 1.0f;
+    //}
+    //else {
+    cb.HasTexture = 0.0f;
+    //}
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    skeleton[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 }
 

@@ -53,6 +53,7 @@ private:
   ID3D11InputLayout*      instanceLayout;
 
   ID3D11Buffer*           _pVertexBuffer;
+  ID3D11Buffer*           skeletonVertexBuffer;
   ID3D11Buffer*           _pIndexBuffer;
 
   ID3D11Buffer*           _pPlaneVertexBuffer;
@@ -86,6 +87,7 @@ private:
 
   vector<Chunk*> chunks;
   vector<GameObject *> _gameObjects;
+  vector<GameObject*> skeleton;
 
   vector<Camera*> cameras;
   float _cameraOrbitRadius = 7.0f;

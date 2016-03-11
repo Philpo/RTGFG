@@ -24,6 +24,7 @@
     <ClInclude Include="Voxel.h" />
     <ClInclude Include="TypeDefs.h" />
     <ClInclude Include="TerrainChunk.h" />
+    <ClInclude Include="Skeleton.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -36,6 +37,7 @@
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Voxel.cpp" />
     <ClCompile Include="TerrainChunk.cpp" />
+    <ClCompile Include="Skeleton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
