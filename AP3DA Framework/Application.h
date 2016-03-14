@@ -18,9 +18,14 @@
 #include <sstream>
 #include "Chunk.h"
 #include "TypeDefs.h"
+#include "RapidXML\rapidxml.hpp"
+#include "RapidXML\rapidxml_utils.hpp"
+#include "KeyFrame.h"
+#include "Skeleton.h"
 
 using namespace noise;
 using namespace DirectX;
+using namespace rapidxml;
 
 struct sphere {
   XMFLOAT3 centre;
@@ -87,7 +92,9 @@ private:
 
   vector<Chunk*> chunks;
   vector<GameObject *> _gameObjects;
-  vector<GameObject*> skeleton;
+  vector<GameObject*> bones;
+  vector<KeyFrame> animation;
+  Skeleton* skeleton;
 
   vector<Camera*> cameras;
   float _cameraOrbitRadius = 7.0f;

@@ -50,44 +50,44 @@ bool Application::HandleKeyboard(MSG msg) {
       return true;
     case 0x57:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->GetRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        skeleton[1]->SetRotation(rotation);
+        bones[1]->SetRotation(rotation);
       }
       return true;
     case 0x53:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->GetRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        skeleton[1]->SetRotation(rotation);
+        bones[1]->SetRotation(rotation);
       }
       return true;
     case 0x41:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->GetRotation();
         rotation.y += XMConvertToRadians(-10.0f);
-        skeleton[1]->SetRotation(rotation);
+        bones[1]->SetRotation(rotation);
       }
       return true;
     case 0x44:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->GetRotation();
         rotation.y += XMConvertToRadians(10.0f);
-        skeleton[1]->SetRotation(rotation);
+        bones[1]->SetRotation(rotation);
       }
       return true;
     case 0x45:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[0]->GetRotation();
+        XMFLOAT3 rotation = bones[0]->GetRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        skeleton[0]->SetRotation(rotation);;
+        bones[0]->SetRotation(rotation);;
       }
       return true;
     case 0x51:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = skeleton[0]->GetRotation();
+        XMFLOAT3 rotation = bones[0]->GetRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        skeleton[0]->SetRotation(rotation);
+        bones[0]->SetRotation(rotation);
       }
       return true;
   }
@@ -304,18 +304,44 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   //_gameObjects.push_back(gameObject);
 
-  GameObject* root = new GameObject("root", cubeGeometry, shinyMaterial);
+  GameObject* root = new GameObject("root", skeletonGeometry, shinyMaterial);
   root->SetPosition(0.0f, 2.0f, -2.0f);
   root->SetScale(0.25f, 0.25f, 2.0f);
   root->SetRotation(0.0f, 0.0f, 0.0f);
-  skeleton.push_back(root);
+  bones.push_back(root);
 
   GameObject* node1 = new GameObject("node1", skeletonGeometry, shinyMaterial);
   node1->SetParent(root);
-  node1->SetPosition(0.0f, 0.0f, 2.0f);
+  node1->SetPosition(0.0f, 0.0f, 4.0f);
   node1->SetRotation(0.0f, 0.0f, 0.0f);
   node1->SetScale(0.25f, 0.25f, 2.0f);
-  skeleton.push_back(node1);
+  bones.push_back(node1);
+
+  skeleton = new Skeleton(2, _pd3dDevice, _pImmediateContext);
+
+  GameObject* bone1 = new GameObject("root", skeletonGeometry, shinyMaterial);
+  bone1->SetPosition(-4.0f, 2.0f, -2.0f);
+  bone1->SetScale(0.25f, 0.25f, 2.0f);
+  bone1->SetRotation(0.0f, 0.0f, 0.0f);
+  skeleton->addBone(bone1);
+
+  GameObject* bone2 = new GameObject("node1", skeletonGeometry, shinyMaterial);
+  bone2->SetParent(bone1);
+  bone2->SetPosition(0.0f, 0.0f, 4.0f);
+  bone2->SetRotation(0.0f, 0.0f, 0.0f);
+  bone2->SetScale(0.25f, 0.25f, 2.0f);
+  skeleton->addBone(bone2);
+
+  file<> file("test_animation.xml");
+  xml_document<> doc;
+  doc.parse<0>(file.data());
+  xml_node<>* rootNode = doc.first_node();
+
+  for (xml_node<>* frameNode = rootNode->first_node()->first_node(); frameNode; frameNode = frameNode->next_sibling()) {
+    KeyFrame frame;
+    frame.loadFrame(frameNode);
+    animation.push_back(frame);
+  }
 
   //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
@@ -1277,9 +1303,11 @@ void Application::Update() {
   for (auto gameObject : _gameObjects) {
     gameObject->Update(timeSinceStart);
   }
-  for (auto gameObject : skeleton) {
+  for (auto gameObject : bones) {
     gameObject->Update(timeSinceStart);
   }
+  skeleton->runAnimation(animation);
+  skeleton->update(t);
 }
 
 void Application::shadowPass(ConstantBuffer& cb) {
@@ -1350,7 +1378,7 @@ void Application::shadowPass(ConstantBuffer& cb) {
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 
-  for (int i = 0; i < skeleton.size(); i++) {
+  for (int i = 0; i < bones.size(); i++) {
     // Get render material
     //material = _gameObjects[i]->GetMaterial();
 
@@ -1360,7 +1388,7 @@ void Application::shadowPass(ConstantBuffer& cb) {
     //cb.surface.SpecularMtrl = material.specular;
 
     // Set world matrix
-    cb.World = XMMatrixTranspose(skeleton[i]->GetWorldMatrix());
+    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
 
     // Set texture
     //if (_gameObjects[i]->HasTexture()) {
@@ -1376,8 +1404,12 @@ void Application::shadowPass(ConstantBuffer& cb) {
     _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
     // Draw object
-    skeleton[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, _pConstantBuffer);
 }
 
 void Application::renderToTextures(ConstantBuffer& cb) {
@@ -1534,6 +1566,8 @@ void Application::shadowMapping() {
   _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV3);
   _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV4);
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
 
   // Draw object
   terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
@@ -1580,7 +1614,7 @@ void Application::shadowMapping() {
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
 
-  for (int i = 0; i < skeleton.size(); i++) {
+  for (int i = 0; i < bones.size(); i++) {
     // Get render material
     //material = _gameObjects[i]->GetMaterial();
 
@@ -1590,7 +1624,7 @@ void Application::shadowMapping() {
     //cb.surface.SpecularMtrl = material.specular;
 
     // Set world matrix
-    cb.World = XMMatrixTranspose(skeleton[i]->GetWorldMatrix());
+    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
 
     // Set texture
     //if (_gameObjects[i]->HasTexture()) {
@@ -1606,8 +1640,12 @@ void Application::shadowMapping() {
     _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
     // Draw object
-    skeleton[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, _pConstantBuffer);
 }
 
 void Application::deferredRendering() {
