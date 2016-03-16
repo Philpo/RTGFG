@@ -231,7 +231,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   double seed = time(0);
   double seed2 = time(0);
   terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
-  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
+  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {
     Cleanup();
@@ -258,8 +258,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   XMFLOAT3 at = XMFLOAT3(0.0f, 0.0f, 1.0f);
   XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-  cameras.push_back(new Camera(true, true, eye, at, up, (float) _renderWidth, (float) _renderHeight, 0.01f, 1000.0f));
-  cameras.push_back(new Camera(true, false, eye, at, up, (float) _renderWidth, (float) _renderHeight, 0.01f, 1000.0f));
+  cameras.push_back(new Camera(true, true, eye, at, up, (float) _renderWidth, (float) _renderHeight, 1.0f, 1000.0f));
+  cameras.push_back(new Camera(true, false, eye, at, up, (float) _renderWidth, (float) _renderHeight, 1.0f, 1000.0f));
 
   // Setup the scene's light
   basicLight.AmbientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);

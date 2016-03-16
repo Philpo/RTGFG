@@ -25,7 +25,7 @@ public:
   void diamondSquare(int size, int seedValue, float heightScale, float h);
   void circleHill(int height, int width, int seedValue, int iterations, int radiusMin, int radiusMax);
   void perlinNoise(int height, int width, double lowerXBound, double upperXBound, double lowerZBound, double upperZBound);
-  void generateGeometry(int height, int width, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth = 1.0f, float cellDepth = 1.0f);
+  void generateGeometry(int height, int width, float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth = 1.0f, float cellDepth = 1.0f);
   void cleanupTerrain();
 
   void setCameraPosition(XMFLOAT3 cameraPosition);
@@ -45,7 +45,7 @@ private:
   static const int CHUNK_WIDTH = 64;
 
   void generateVertices();
-  void generateIndices(ID3D11Device* const device, ID3D11DeviceContext* const immediateContext);
+  void generateIndices(float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext);
   void generateNormals();
   void setChunkCentres();
   float getHeight(int i, int j);

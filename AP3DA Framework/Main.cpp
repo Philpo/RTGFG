@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <windowsx.h>
+#define NOMINMAX
 
 double timeLastFrame, frameRate, freq;
 __int64 counterStart;

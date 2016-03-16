@@ -512,7 +512,7 @@ void Terrain::perlinNoise(int height, int width, double lowerXBound, double uppe
   }
 }
 
-void Terrain::generateGeometry(int height, int width, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth, float cellDepth) {
+void Terrain::generateGeometry(int height, int width, float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth, float cellDepth) {
   terrainHeight = height;
   terrainWidth = width;
   dX = cellWidth;
@@ -521,7 +521,7 @@ void Terrain::generateGeometry(int height, int width, ID3D11Device* const device
   numIndices = height * width * 6;
 
   generateVertices();
-  generateIndices(device, immediateContext);
+  generateIndices(nearPlane, nearTopLeft, tau, verticalResolution, device, immediateContext);
   generateNormals();
   setChunkCentres();
 }
@@ -545,10 +545,10 @@ void Terrain::generateVertices() {
   }
 }
 
-void Terrain::generateIndices(ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) {
+void Terrain::generateIndices(float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) {
   for (int i = 0; i < terrainHeight / CHUNK_HEIGHT; i++) {
     for (int j = 0; j < terrainWidth / CHUNK_WIDTH; j++) {
-      TerrainChunk* chunk = new TerrainChunk(material, j, i, CHUNK_HEIGHT, CHUNK_WIDTH, terrainWidth, device, immediateContext);
+      TerrainChunk* chunk = new TerrainChunk(material, j, i, CHUNK_HEIGHT, CHUNK_WIDTH, terrainWidth, nearPlane, nearTopLeft, tau, verticalResolution, heightMap, device, immediateContext);
       chunk->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
       chunk->Update(0);
       chunks.push_back(chunk);
