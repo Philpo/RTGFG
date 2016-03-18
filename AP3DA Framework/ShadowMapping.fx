@@ -162,21 +162,21 @@ float4 SHADOW_TERRAIN_PS(VS_OUTPUT input) : SV_Target{
   float4 textureColour = float4(0.0f, 0.0f, 0.0f, 0.0f);
   float lerpParam = 0.0f;
 
-  if (abs(input.posL.y) >= 205.0f) {
+  if (abs(input.posL.y) >= 155.0f) {
     textureColour = textureColour1;
-  }
-  else if (abs(input.posL.y) < 205.0f && abs(input.posL.y) >= 155.0f) {
-    lerpParam = abs(input.posL.y) - 155.0f;
-    lerpParam /= 49.0f;
-    textureColour = lerp(textureColour2, textureColour1, lerpParam);
   }
   else if (abs(input.posL.y) < 155.0f && abs(input.posL.y) >= 105.0f) {
     lerpParam = abs(input.posL.y) - 105.0f;
     lerpParam /= 49.0f;
+    textureColour = lerp(textureColour2, textureColour1, lerpParam);
+  }
+  else if (abs(input.posL.y) < 105.0f && abs(input.posL.y) >= 55.0f) {
+    lerpParam = abs(input.posL.y) - 55.0f;
+    lerpParam /= 49.0f;
     textureColour = lerp(textureColour3, textureColour2, lerpParam);
   }
-  else if (abs(input.posL.y) < 105.0f) {
-    lerpParam = abs(input.posL.y) / 104.0f;
+  else if (abs(input.posL.y) < 55.0f) {
+    lerpParam = abs(input.posL.y) / 55.0f;
     textureColour = lerp(textureColour4, textureColour3, lerpParam);
   }
 

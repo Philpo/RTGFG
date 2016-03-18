@@ -226,11 +226,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   terrain = new Terrain(noSpecMaterial);
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
-  //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
+  terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
   double seed = time(0);
   double seed2 = time(0);
-  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+  //terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {
@@ -1505,6 +1505,39 @@ void Application::renderToTextures(ConstantBuffer& cb) {
     // Draw object
     _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
   }
+
+  for (int i = 0; i < bones.size(); i++) {
+    // Get render material
+    //material = _gameObjects[i]->GetMaterial();
+
+    //// Copy material to shader
+    //cb.surface.AmbientMtrl = material.ambient;
+    //cb.surface.DiffuseMtrl = material.diffuse;
+    //cb.surface.SpecularMtrl = material.specular;
+
+    // Set world matrix
+    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
+
+    // Set texture
+    //if (_gameObjects[i]->HasTexture()) {
+    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
+    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+    //  cb.HasTexture = 1.0f;
+    //}
+    //else {
+    cb.HasTexture = 0.0f;
+    //}
+
+    // Update constant buffer
+    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+    // Draw object
+    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  }
+
+  _pImmediateContext->IASetInputLayout(instanceLayout);
+  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, _pConstantBuffer);
 }
 
 void Application::shadowMapping() {
@@ -1561,10 +1594,10 @@ void Application::shadowMapping() {
   cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
   cb.HasTexture = 1.0f;
   _pImmediateContext->PSSetShader(shadowTerrainPixelShader, nullptr, 0);
-  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV4);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
   _pImmediateContext->IASetInputLayout(_pVertexLayout);
   _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
