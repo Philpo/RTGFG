@@ -129,7 +129,6 @@ void Camera::rotatePitch(const float angle) {
 
 void Camera::rotateYaw(const float angle) {
   if (moveable) {
-
     XMMATRIX rotationMatrix = XMMatrixRotationY(angle);
     XMVECTOR newLookVector = XMVector4Transform(XMLoadFloat4(&XMFLOAT4(_at.x, _at.y, _at.z, 0.0f)), rotationMatrix);
     XMVECTOR newUpVector = XMVector4Transform(XMLoadFloat4(&XMFLOAT4(up.x, up.y, up.z, 0.0f)), rotationMatrix);

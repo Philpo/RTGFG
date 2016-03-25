@@ -61,7 +61,7 @@ struct VS_OUTPUT {
 float calcShadowFactor(float4 shadowPos) {
   float depth = shadowPos.z - 0.002f;
 
-  float dx = 1.0f / 2048.0f;
+  float dx = 1.0f / 8096.0f;
 
   float percentLit = 0.0f;
 

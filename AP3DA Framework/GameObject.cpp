@@ -5,6 +5,7 @@ GameObject::GameObject(string type) : _type(type) {
   _parent = nullptr;
   _position = XMFLOAT3();
   _rotation = XMFLOAT3();
+  worldRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
   _scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
   _textureRV = nullptr;
@@ -14,6 +15,7 @@ GameObject::GameObject(string type, Material material) : _type(type), _material(
   _parent = nullptr;
   _position = XMFLOAT3();
   _rotation = XMFLOAT3();
+  worldRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
   _scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
   _textureRV = nullptr;
@@ -23,6 +25,7 @@ GameObject::GameObject(string type, Geometry geometry, Material material) : _geo
   _parent = nullptr;
   _position = XMFLOAT3();
   _rotation = XMFLOAT3();
+  worldRotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
   _scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
   _textureRV = nullptr;
@@ -36,16 +39,22 @@ void GameObject::Update(float t) {
   XMMATRIX scale = XMMatrixScaling(_scale.x, _scale.y, _scale.z);
   XMMATRIX rotation = XMMatrixRotationX(_rotation.x) * XMMatrixRotationY(_rotation.y) * XMMatrixRotationZ(_rotation.z);
   XMMATRIX translation = XMMatrixTranslation(_position.x, _position.y, _position.z);
+  XMMATRIX worldRot = XMMatrixRotationX(worldRotation.x) * XMMatrixRotationY(worldRotation.y) * XMMatrixRotationZ(worldRotation.z);
 
-  XMStoreFloat4x4(&_world, scale * rotation * translation);
+  XMStoreFloat4x4(&_world, scale * rotation * worldRot * translation);
 
   if (_parent != nullptr) {
-    XMMATRIX temp = XMMatrixIdentity();
-    temp *= XMMatrixRotationX(_parent->GetRotation().x);
-    temp *= XMMatrixRotationY(_parent->GetRotation().y);
-    temp *= XMMatrixRotationZ(_parent->GetRotation().z);
-    temp *= XMMatrixTranslation(_parent->GetPosition().x, _parent->GetPosition().y, _parent->GetPosition().z);
-    XMStoreFloat4x4(&_world, this->GetWorldMatrix() * temp);
+    GameObject* parent = _parent;
+
+    while (parent) {
+      XMMATRIX temp = XMMatrixIdentity();
+      temp *= XMMatrixRotationX(parent->getWorldRotation().x);
+      temp *= XMMatrixRotationY(parent->getWorldRotation().y);
+      temp *= XMMatrixRotationZ(parent->getWorldRotation().z);
+      temp *= XMMatrixTranslation(parent->GetPosition().x, parent->GetPosition().y, parent->GetPosition().z);
+      XMStoreFloat4x4(&_world, this->GetWorldMatrix() * temp);
+      parent = parent->_parent;
+    }
   }
 }
 

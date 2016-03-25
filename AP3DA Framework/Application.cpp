@@ -50,44 +50,44 @@ bool Application::HandleKeyboard(MSG msg) {
       return true;
     case 0x57:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->getWorldRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        bones[1]->SetRotation(rotation);
+        bones[1]->setWorldRotation(rotation);
       }
       return true;
     case 0x53:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->getWorldRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        bones[1]->SetRotation(rotation);
+        bones[1]->setWorldRotation(rotation);
       }
       return true;
     case 0x41:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->getWorldRotation();
         rotation.y += XMConvertToRadians(-10.0f);
-        bones[1]->SetRotation(rotation);
+        bones[1]->setWorldRotation(rotation);
       }
       return true;
     case 0x44:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->GetRotation();
+        XMFLOAT3 rotation = bones[1]->getWorldRotation();
         rotation.y += XMConvertToRadians(10.0f);
-        bones[1]->SetRotation(rotation);
+        bones[1]->setWorldRotation(rotation);
       }
       return true;
     case 0x45:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[0]->GetRotation();
+        XMFLOAT3 rotation = bones[0]->getWorldRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        bones[0]->SetRotation(rotation);;
+        bones[0]->setWorldRotation(rotation);;
       }
       return true;
     case 0x51:
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[0]->GetRotation();
+        XMFLOAT3 rotation = bones[0]->getWorldRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        bones[0]->SetRotation(rotation);
+        bones[0]->setWorldRotation(rotation);
       }
       return true;
   }
@@ -226,11 +226,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
 
   terrain = new Terrain(noSpecMaterial);
   //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
-  terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
+  //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
   //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
   double seed = time(0);
   double seed2 = time(0);
-  //terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+  terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
   terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {
@@ -317,20 +317,124 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   node1->SetScale(0.25f, 0.25f, 2.0f);
   bones.push_back(node1);
 
-  skeleton = new Skeleton(2, _pd3dDevice, _pImmediateContext);
+  skeleton = new Skeleton(17, _pd3dDevice, _pImmediateContext);
 
-  GameObject* bone1 = new GameObject("root", skeletonGeometry, shinyMaterial);
-  bone1->SetPosition(-4.0f, 2.0f, -2.0f);
-  bone1->SetScale(0.25f, 0.25f, 2.0f);
+  bone1 = new GameObject("head", skeletonGeometry, shinyMaterial);
+  bone1->SetPosition(-4.0f, terrain->getCameraHeight(-4.0f, -2.0f) + 13.5f, -2.0f);
   bone1->SetRotation(0.0f, 0.0f, 0.0f);
   skeleton->addBone(bone1);
 
-  GameObject* bone2 = new GameObject("node1", skeletonGeometry, shinyMaterial);
+  GameObject* bone2 = new GameObject("neck", skeletonGeometry, shinyMaterial);
   bone2->SetParent(bone1);
-  bone2->SetPosition(0.0f, 0.0f, 4.0f);
-  bone2->SetRotation(0.0f, 0.0f, 0.0f);
-  bone2->SetScale(0.25f, 0.25f, 2.0f);
+  bone2->SetPosition(0.0f, -1.0f, 1.0f);
+  bone2->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone2->SetScale(0.25f, 0.25f, 0.5f);
   skeleton->addBone(bone2);
+
+  GameObject* bone3 = new GameObject("rightshoulder", skeletonGeometry, shinyMaterial);
+  bone3->SetParent(bone2);
+  bone3->SetPosition(0.0f, -1.25f, 0.0f);
+  bone3->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone3->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone3);
+
+  GameObject* bone4 = new GameObject("leftshoulder", skeletonGeometry, shinyMaterial);
+  bone4->SetParent(bone2);
+  bone4->SetPosition(0.0f, -1.25f, 0.0f);
+  bone4->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone4->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone4);
+
+  GameObject* bone5 = new GameObject("rightupperarm", skeletonGeometry, shinyMaterial);
+  bone5->SetParent(bone3);
+  bone5->SetPosition(2.0f, 0.0f, 0.0f);
+  bone5->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone5->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone5);
+
+  GameObject* bone6 = new GameObject("rightlowerarm", skeletonGeometry, shinyMaterial);
+  bone6->SetParent(bone5);
+  bone6->SetPosition(2.0f, 0.0f, 0.0f);
+  bone6->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone6->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone6);
+
+  GameObject* bone7 = new GameObject("leftupperarm", skeletonGeometry, shinyMaterial);
+  bone7->SetParent(bone4);
+  bone7->SetPosition(-2.0f, 0.0f, 0.0f);
+  bone7->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone7->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone7);
+
+  GameObject* bone8 = new GameObject("leftlowerarm", skeletonGeometry, shinyMaterial);
+  bone8->SetParent(bone7);
+  bone8->SetPosition(-2.0f, 0.0f, 0.0f);
+  bone8->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone8->SetScale(0.25f, 0.25f, 1.0f);
+  skeleton->addBone(bone8);
+
+  GameObject* bone9 = new GameObject("back", skeletonGeometry, shinyMaterial);
+  bone9->SetParent(bone2);
+  bone9->SetPosition(0.0f, -1.5f, 0.0f);
+  bone9->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone9->SetScale(0.25f, 0.25f, 2.0f);
+  skeleton->addBone(bone9);
+
+  GameObject* bone10 = new GameObject("righthip", skeletonGeometry, shinyMaterial);
+  bone10->SetParent(bone9);
+  bone10->SetPosition(0.0f, -4.25f, 0.0f);
+  bone10->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone10->SetScale(0.25f, 0.25f, 0.5f);
+  skeleton->addBone(bone10);
+
+  GameObject* bone11 = new GameObject("lefthip", skeletonGeometry, shinyMaterial);
+  bone11->SetParent(bone9);
+  bone11->SetPosition(0.0f, -4.25f, 0.0f);
+  bone11->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone11->SetScale(0.25f, 0.25f, 0.5f);
+  skeleton->addBone(bone11);
+
+  GameObject* bone12 = new GameObject("rightupperleg", skeletonGeometry, shinyMaterial);
+  bone12->SetParent(bone10);
+  bone12->SetPosition(1.25f, 0.25f, 0.0f);
+  bone12->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone12->SetScale(0.25f, 0.25f, 1.5f);
+  skeleton->addBone(bone12);
+
+  GameObject* bone13 = new GameObject("rightlowerleg", skeletonGeometry, shinyMaterial);
+  bone13->SetParent(bone12);
+  bone13->SetPosition(0.0f, -3.0f, 0.0f);
+  bone13->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone13->SetScale(0.25f, 0.25f, 1.5f);
+  skeleton->addBone(bone13);
+
+  GameObject* bone14 = new GameObject("leftupperleg", skeletonGeometry, shinyMaterial);
+  bone14->SetParent(bone11);
+  bone14->SetPosition(-1.25f, 0.25f, 0.0f);
+  bone14->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone14->SetScale(0.25f, 0.25f, 1.5f);
+  skeleton->addBone(bone14);
+
+  GameObject* bone15 = new GameObject("leftlowerleg", skeletonGeometry, shinyMaterial);
+  bone15->SetParent(bone14);
+  bone15->SetPosition(0.0f, -3.0f, 0.0f);
+  bone15->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone15->SetScale(0.25f, 0.25f, 1.5f);
+  skeleton->addBone(bone15);
+
+  GameObject* bone16 = new GameObject("rightfoot", skeletonGeometry, shinyMaterial);
+  bone16->SetParent(bone13);
+  bone16->SetPosition(0.0f, -3.25f, -0.25f);
+  bone16->SetRotation(0.0f, 0.0f, 0.0f);
+  bone16->SetScale(0.25f, 0.25f, 0.75f);
+  skeleton->addBone(bone16);
+
+  GameObject* bone17 = new GameObject("leftfoot", skeletonGeometry, shinyMaterial);
+  bone17->SetParent(bone15);
+  bone17->SetPosition(0.0f, -3.25f, -0.25f);
+  bone17->SetRotation(0.0f, 0.0f, 0.0f);
+  bone17->SetScale(0.25f, 0.25f, 0.75f);
+  skeleton->addBone(bone17);
 
   file<> file("test_animation.xml");
   xml_document<> doc;
@@ -342,6 +446,14 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
     frame.loadFrame(frameNode);
     animation.push_back(frame);
   }
+
+  skeleton->setRoot(bone1);
+  skeleton->setAnimation(animation);
+  skeleton->addWaypoint(XMFLOAT3(-50.0f, 0.0f, 50.0f));
+  skeleton->addWaypoint(XMFLOAT3(-50.0f, 0.0f, -50.0f));
+  skeleton->addWaypoint(XMFLOAT3(50.0f, 0.0f, 50.0f));
+  skeleton->addWaypoint(XMFLOAT3(50.0f, 0.0f, -50.0f));
+  skeleton->setTerrain(terrain);
 
   //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
   //gameObject->SetScale(0.5f, 0.5f, 0.5f);
@@ -1044,8 +1156,8 @@ HRESULT Application::InitDevice() {
   vp.TopLeftY = 0;
   _pImmediateContext->RSSetViewports(1, &vp);
 
-  lightVP.Width = 2048.0f;
-  lightVP.Height = 2048.0f;
+  lightVP.Width = 8096.0f;
+  lightVP.Height = 8096.0f;
   lightVP.MinDepth = 0.0f;
   lightVP.MaxDepth = 1.0f;
   lightVP.TopLeftX = 0;
@@ -1091,8 +1203,8 @@ HRESULT Application::InitDevice() {
 
   _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
 
-  depthStencilDesc.Width = 2048;
-  depthStencilDesc.Height = 2048;
+  depthStencilDesc.Width = 8096;
+  depthStencilDesc.Height = 8096;
   depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
   depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 
@@ -1306,7 +1418,14 @@ void Application::Update() {
   for (auto gameObject : bones) {
     gameObject->Update(timeSinceStart);
   }
-  skeleton->runAnimation(animation);
+
+  //if (bone1->GetPosition().z < 150.0f) {
+  //  XMFLOAT3 pos = bone1->GetPosition();
+  //  bone1->SetPosition(pos.x, terrain->getCameraHeight(pos.x, pos.z + 0.01f) + 13.5f, pos.z + 0.01f);
+  //}
+
+  //skeleton->runAnimation(animation);
+  skeleton->walk();
   skeleton->update(t);
 }
 

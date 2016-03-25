@@ -45,7 +45,11 @@ public:
   void SetRotation(XMFLOAT3 rotation) { _rotation = rotation; }
   void SetRotation(float x, float y, float z) { _rotation.x = x; _rotation.y = y; _rotation.z = z; }
 
+  void setWorldRotation(XMFLOAT3 rotation) { worldRotation = rotation; }
+  void setWorldRotation(float x, float y, float z) { worldRotation.x = x; worldRotation.y = y; worldRotation.z = z; }
+
   XMFLOAT3 GetRotation() const { return _rotation; }
+  XMFLOAT3 getWorldRotation() const { return worldRotation; }
 
   string GetType() const { return _type; }
 
@@ -69,6 +73,7 @@ protected:
 private:
   XMFLOAT3 _position;
   XMFLOAT3 _rotation;
+  XMFLOAT3 worldRotation;
   XMFLOAT3 _scale;
 
   string _type;

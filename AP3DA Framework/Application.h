@@ -95,6 +95,7 @@ private:
   vector<GameObject*> bones;
   vector<KeyFrame> animation;
   Skeleton* skeleton;
+  GameObject* bone1;
 
   vector<Camera*> cameras;
   float _cameraOrbitRadius = 7.0f;

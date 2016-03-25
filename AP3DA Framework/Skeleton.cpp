@@ -14,6 +14,8 @@ Skeleton::Skeleton(int numBones, ID3D11Device* d3dDevice, ID3D11DeviceContext* p
   ZeroMemory(&InitData, sizeof(InitData));
 
   HRESULT hr = d3dDevice->CreateBuffer(&desc, 0, &instanceBuffer);
+
+  facing = XMFLOAT3(0.0f, 0.0f, 1.0f);
 }
 
 Skeleton::~Skeleton() {
@@ -37,7 +39,7 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
 
         if (frameCount == 1.0f) {
           initialPositions.push_back(bone->GetPosition());
-          initialRotations.push_back(bone->GetRotation());
+          initialRotations.push_back(bone->getWorldRotation());
         }
 
         if (frame.getUpdatePositions()[i]) {
@@ -52,7 +54,7 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
           rotationInRadians.z = XMConvertToRadians(frame.getRotations()[i].z);
 
           XMStoreFloat3(&newRotation, XMVectorLerp(XMLoadFloat3(&initialRotations[i]), XMLoadFloat3(&rotationInRadians), frameCount / (float) frame.getNumFrames()));
-          bone->SetRotation(newRotation);
+          bone->setWorldRotation(newRotation);
         }
       }
       frameCount++;
@@ -69,6 +71,56 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
   }
   else {
     updateInstanceBuffer = false;
+  }
+}
+
+void Skeleton::walk() {
+  if (waypoints.size() > 0) {
+    if (root->GetPosition().x != waypoints[target].x || root->GetPosition().z != waypoints[target].z) {
+      if (currentFrame == animation.size()) {
+        currentFrame = 0;
+        frameCount = 1;
+        initialPositions.clear();
+        initialRotations.clear();
+      }
+
+      runAnimation(animation);
+      float xDifference = abs(rootInitialPosition.x - waypoints[target].x);
+      float zDifference = abs(rootInitialPosition.z - waypoints[target].y);
+      float lerpParam = max(xDifference, zDifference) * 50.0f;
+      XMFLOAT3 newPos;
+      XMStoreFloat3(&newPos, XMVectorLerp(XMLoadFloat3(&rootInitialPosition), XMLoadFloat3(&waypoints[target]), move / (float) lerpParam));
+      newPos.y = terrain->getCameraHeight(newPos.x, newPos.z) + 13.5;
+      root->SetPosition(newPos);
+
+      move++;
+    }
+    else {
+      rootInitialPosition = root->GetPosition();
+      target = target == waypoints.size() - 1 ? 0 : target + 1;
+     
+      XMVECTOR toTarget = XMLoadFloat3(&waypoints[target]) - XMLoadFloat3(&XMFLOAT3(rootInitialPosition.x, 0.0f, rootInitialPosition.z));
+      XMFLOAT3 dotProduct;
+      XMStoreFloat3(&dotProduct, XMVector3Dot(XMVector3Normalize(XMLoadFloat3(&facing)), XMVector3Normalize(toTarget)));
+      float angle = acos(dotProduct.x);
+
+      if (waypoints[target].x < 0) {
+        angle *= -1;
+      }
+
+      cout << "angle " << XMConvertToDegrees(angle) << endl;
+
+      XMFLOAT3 rotation = root->getWorldRotation();
+      rotation.y = angle;
+      root->setWorldRotation(rotation);
+      XMStoreFloat3(&facing, XMVector3Normalize(XMVector3Transform(XMLoadFloat3(&facing), XMMatrixRotationY(angle))));
+      cout << "facing (" << facing.x << "," << facing.y << "," << facing.z << ")" << endl;
+
+      //XMMATRIX temp = XMMatrixLookAtLH(XMLoadFloat3(&rootInitialPosition), XMLoadFloat3(&waypoints[target]), XMVectorSet(0.0f, 1.0f, 0.0f));
+
+      move = 1;
+      updateInstanceBuffer = false;
+    }
   }
 }
 
