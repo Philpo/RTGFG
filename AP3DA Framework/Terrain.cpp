@@ -23,12 +23,6 @@ Terrain::~Terrain() {
   if (heightMap) {
     delete[] heightMap;
   }
-  if (heightMap2) {
-    for (int i = 0; i < terrainWidth; i++) {
-      delete[] heightMap2;
-    }
-    delete[] heightMap2;
-  }
 
   for (auto chunk : chunks) {
     delete chunk;
@@ -41,167 +35,70 @@ void Terrain::setCameraPosition(XMFLOAT3 cameraPosition) {
   }
 }
 
-void Terrain::frustumCull(XMFLOAT4 leftPlane, XMFLOAT4 rightPlane, XMFLOAT4 topPlane, XMFLOAT4 bottomPlane, XMFLOAT4 nearPlane, XMFLOAT4 farPlane) {
+void Terrain::cameraRotated() {
+  for (auto chunk : chunks) {
+    chunk->setCameraMoved(true);
+  }
+}
+
+void Terrain::frustumCull(XMFLOAT4* frustumPlanes) {
   XMVECTOR dotProduct;
   XMFLOAT3 temp;
-  XMFLOAT4 distanceFromLeftTop, distanceFromRightTop, distanceFromTopTop, distanceFromBottomTop, distanceFromNearTop, distanceFromFarTop;
-  XMFLOAT4 distanceFromLeftBottom, distanceFromRightBottom, distanceFromTopBottom, distanceFromBottomBottom, distanceFromNearBottom, distanceFromFarBottom;
-  XMFLOAT3 trimmedLeft, trimmedRight, trimmedTop, trimmedBottom, trimmedNear, trimmedFar;
+  XMFLOAT4 distanceFromTop;
+  XMFLOAT4 distanceFromBottom;
+  XMFLOAT3 trimmedPlane;
   BoundingBox boundingBox;
 
-  trimmedLeft = XMFLOAT3(leftPlane.x, leftPlane.y, leftPlane.z);
-  trimmedRight = XMFLOAT3(rightPlane.x, rightPlane.y, rightPlane.z);
-  trimmedTop = XMFLOAT3(topPlane.x, topPlane.y, topPlane.z);
-  trimmedBottom = XMFLOAT3(bottomPlane.x, bottomPlane.y, bottomPlane.z);
-  trimmedNear = XMFLOAT3(nearPlane.x, nearPlane.y, nearPlane.z);
-  trimmedFar = XMFLOAT3(farPlane.x, farPlane.y, farPlane.z);
-
   for (auto chunk : chunks) {
-    boundingBox = chunk->getBoundingBox();
+    for (int i = 0; i < 6; i++) {
+      trimmedPlane = XMFLOAT3(frustumPlanes[i].x, frustumPlanes[i].y, frustumPlanes[i].z);
 
-    // top top left corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftTop.x = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightTop.x = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopTop.x = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomTop.x = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearTop.x = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarTop.x = temp.x + farPlane.w;
+      boundingBox = chunk->getBoundingBox();
+      // top top left corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&boundingBox.topLeft), XMLoadFloat3(&trimmedPlane)));
+      distanceFromTop.x = temp.x + frustumPlanes[i].w;
 
-    // top top right corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftTop.y = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightTop.y = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopTop.y = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomTop.y = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearTop.y = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarTop.y = temp.x + farPlane.w;
+      // top top right corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromTop.y = temp.x + frustumPlanes[i].w;
 
-    // top bottom left corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftTop.z = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightTop.z = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopTop.z = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomTop.z = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearTop.z = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarTop.z = temp.x + farPlane.w;
+      // top bottom left corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromTop.z = temp.x + frustumPlanes[i].w;
 
-    // top bottom right corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftTop.w = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightTop.w = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopTop.w = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomTop.w = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearTop.w = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarTop.w = temp.x + farPlane.w;
+      // top bottom right corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromTop.w = temp.x + frustumPlanes[i].w;
 
-    // bottom top left corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftBottom.x = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightBottom.x = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopBottom.x = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomBottom.x = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearBottom.x = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarBottom.x = temp.x + farPlane.w;
+      // bottom top left corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromBottom.x = temp.x + frustumPlanes[i].w;
 
-    // bottom top right corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftBottom.y = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightBottom.y = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopBottom.y = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomBottom.y = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearBottom.y = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarBottom.y = temp.x + farPlane.w;
+      // bottom top right corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromBottom.y = temp.x + frustumPlanes[i].w;
 
-    // bottom bottom left corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftBottom.z = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightBottom.z = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopBottom.z = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomBottom.z = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearBottom.z = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarBottom.z = temp.x + farPlane.w;
+      // bottom bottom left corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromBottom.z = temp.x + frustumPlanes[i].w;
 
-    // bottom bottom right corner
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedLeft)));
-    distanceFromLeftBottom.w = temp.x + leftPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedRight)));
-    distanceFromRightBottom.w = temp.x + rightPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedTop)));
-    distanceFromTopBottom.w = temp.x + topPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedBottom)));
-    distanceFromBottomBottom.w = temp.x + bottomPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedNear)));
-    distanceFromNearBottom.w = temp.x + nearPlane.w;
-    XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedFar)));
-    distanceFromFarBottom.w = temp.x + farPlane.w;
+      // bottom bottom right corner
+      XMStoreFloat3(&temp, XMVector3Dot(XMLoadFloat3(&XMFLOAT3(boundingBox.topLeft.x + boundingBox.width, boundingBox.topLeft.y - boundingBox.height, boundingBox.topLeft.z - boundingBox.depth)), XMLoadFloat3(&trimmedPlane)));
+      distanceFromBottom.w = temp.x + frustumPlanes[i].w;
 
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
+      if (distanceFromTop.x > 0 && distanceFromTop.y > 0 && distanceFromTop.z > 0 && distanceFromTop.w > 0 && distanceFromBottom.x > 0 && distanceFromBottom.y > 0 && distanceFromBottom.z > 0 && distanceFromBottom.w > 0) {
+        chunk->setVisible(false);
+        break;
+      }
+
+      chunk->setVisible(true);
     }
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
-    }
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
-    }
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
-    }
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
-    }
-    if (distanceFromLeftTop.x > 0 && distanceFromLeftTop.y > 0 && distanceFromLeftTop.z > 0 && distanceFromLeftTop.w > 0 && distanceFromLeftBottom.x > 0 && distanceFromLeftBottom.y > 0 && distanceFromLeftBottom.z > 0 && distanceFromLeftBottom.w > 0) {
-      chunk->setVisible(false);
-      continue;
-    }
-
-    chunk->setVisible(true);
   }
 }
 
 void Terrain::Update(float t) {
   for (auto chunk : chunks) {
+    chunk->calcMipMapLevel();
     chunk->Update(t);
   }
 }
@@ -524,6 +421,7 @@ void Terrain::generateGeometry(int height, int width, float nearPlane, float nea
   generateIndices(nearPlane, nearTopLeft, tau, verticalResolution, device, immediateContext);
   generateNormals();
   setChunkCentres();
+  setNeighbouringChunks();
 }
 
 void Terrain::generateVertices() {
@@ -537,7 +435,7 @@ void Terrain::generateVertices() {
       for (int j = 0; j <= terrainWidth; j++) {
         x = distanceFromCentreX + j;
         z = distanceFromCentreZ - i;
-        SimpleVertex temp = SimpleVertex{ XMFLOAT3(j * dX + ((-terrainWidth * 0.5f) * dX), getHeight(i, j), -(i * dZ) + ((terrainHeight * 0.5f)) * dZ), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT2(x, z) };
+        SimpleVertex temp = SimpleVertex { XMFLOAT3(j * dX + ((-terrainWidth * 0.5f) * dX), getHeight(i, j), -(i * dZ) + ((terrainHeight * 0.5f)) * dZ), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT2(x, z) };
         k = (i * (terrainWidth + 1)) + j;
         vertices[k] = temp;
       }
@@ -550,6 +448,7 @@ void Terrain::generateIndices(float nearPlane, float nearTopLeft, float tau, flo
     for (int j = 0; j < terrainWidth / CHUNK_WIDTH; j++) {
       TerrainChunk* chunk = new TerrainChunk(material, j, i, CHUNK_HEIGHT, CHUNK_WIDTH, terrainWidth, nearPlane, nearTopLeft, tau, verticalResolution, heightMap, device, immediateContext);
       chunk->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+      chunk->calcMipMapLevel();
       chunk->Update(0);
       chunks.push_back(chunk);
     }
@@ -620,7 +519,7 @@ void Terrain::setChunkCentres() {
 
     for (int i = 0; i < CHUNK_HEIGHT * CHUNK_WIDTH * 6; i++) {
       float height = vertices[chunk->getIndices()[i]].PosL.y;
-      
+
       if (height > highest) {
         highest = height;
       }
@@ -633,17 +532,32 @@ void Terrain::setChunkCentres() {
   }
 }
 
+void Terrain::setNeighbouringChunks() {
+  int verticalChunks = terrainHeight / CHUNK_HEIGHT;
+  int horizontalChunks = terrainWidth / CHUNK_WIDTH;
+
+  for (int i = 0; i < verticalChunks; i++) {
+    for (int j = 0; j < horizontalChunks; j++) {
+      if (i > 0) {
+        chunks[(i * horizontalChunks) + j]->setNorthChunk(chunks[((i - 1) * horizontalChunks) + j]);
+      }
+      if (i < verticalChunks - 1) {
+        chunks[(i * horizontalChunks) + j]->setSouthChunk(chunks[((i + 1) * horizontalChunks) + j]);
+      }
+      if (j > 0) {
+        chunks[(i * horizontalChunks) + j]->setWestChunk(chunks[(i * horizontalChunks) + j - 1]);
+      }
+      if (j < horizontalChunks - 1) {
+        chunks[(i * horizontalChunks) + j]->setEastChunk(chunks[(i * horizontalChunks) + j + 1]);
+      }
+    }
+  }
+}
+
 float Terrain::getHeight(int i, int j) {
   if (heightMap) {
     int index = (i * (terrainWidth + 1)) + j;
     return heightMap[index];
-  }
-  return 0.0f;
-}
-
-float Terrain::getHeight2(int i, int j) {
-  if (heightMap2[i]) {
-    return heightMap2[i][j];
   }
   return 0.0f;
 }

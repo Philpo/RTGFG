@@ -19,6 +19,12 @@ public:
   void setBoundingBox(XMFLOAT3 topLeft, float height);
   void setCameraPosition(XMFLOAT3 cameraPosition);
   void setCentre(XMFLOAT3 centre) { this->centre = centre; }
+  void setNorthChunk(TerrainChunk* const north) { this->north = north; }
+  void setSouthChunk(TerrainChunk* const south) { this->south = south; }
+  void setEastChunk(TerrainChunk* const east) { this->east = east; }
+  void setWestChunk(TerrainChunk* const west) { this->west = west; }
+  void setCameraMoved(bool cameraMoved) { this->cameraMoved = cameraMoved; }
+  void calcMipMapLevel();
   void Update(float t) override;
   void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
 private:
@@ -27,13 +33,15 @@ private:
   int xOffset, zOffset, height, width, terrainWidth, numMipLevels, currentMipLevel;
   float cSquared, kC;
   bool cameraMoved, visible;
+  bool refresh = false;
   XMFLOAT3 cameraPosition, centre;
   UINT** indices;
   ID3D11Buffer* indexBuffer;
   ID3D11DeviceContext* immediateContext;
   BoundingBox boundingBox;
+  TerrainChunk *north, *south, *east, *west;
 
+  void refreshIndexBuffer();
   void calcDn2();
   float getHeight(int i, int j);
-  float biLinearInterp(int lx, int hx, int ly, int hy, int tx, int ty);
 };

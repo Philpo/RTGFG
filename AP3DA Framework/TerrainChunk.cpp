@@ -4,8 +4,9 @@
 
 using namespace std;
 
-TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int height, int width, int terrainWidth, float nearPlane, float nearTopLeft, float tau, float verticalResolution, float* const heightMap, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) : 
-  GameObject("terrain_chunk", material), xOffset(xOffset), zOffset(zOffset), height(height), width(width), terrainWidth(terrainWidth), visible(true), immediateContext(immediateContext), heightMap(heightMap) {
+TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int height, int width, int terrainWidth, float nearPlane, float nearTopLeft, float tau, float verticalResolution, float* const heightMap, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext) :
+GameObject("terrain_chunk", material), xOffset(xOffset), zOffset(zOffset), height(height), width(width), terrainWidth(terrainWidth), visible(true), immediateContext(immediateContext)
+, heightMap(heightMap), north(nullptr), south(nullptr), east(nullptr), west(nullptr) {
   numMipLevels = terrainWidth != width ? (terrainWidth / width) - 1 : 1;
 
   //if (numMipLevels > 5) {
@@ -51,16 +52,6 @@ TerrainChunk::TerrainChunk(Material material, int xOffset, int zOffset, int heig
       }
     }
   }
-
-  float maxHeight = 0;
-
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      maxHeight = max(maxHeight, heightMap[(i * (terrainWidth + 1)) + j + heightOffSet + widthOffset]);
-    }
-  }
-
-  cout << "chunk (" << xOffset << ", " << zOffset << ") " << maxHeight << endl;
 
   calcDn2();
 
@@ -108,14 +99,12 @@ void TerrainChunk::setCameraPosition(XMFLOAT3 cameraPosition) {
   }
 }
 
-void TerrainChunk::Update(float t) {
+void TerrainChunk::calcMipMapLevel() {
   if (visible) {
-    GameObject::Update(t);
-
     if (cameraMoved) {
       XMVECTOR toCamera = XMLoadFloat3(&centre) - XMLoadFloat3(&cameraPosition);
       XMFLOAT3 distanceToCamera;
-//      XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
+      //      XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
       XMStoreFloat3(&distanceToCamera, toCamera);
 
       float d2 = (distanceToCamera.x * distanceToCamera.x) + (distanceToCamera.y * distanceToCamera.y) + (distanceToCamera.z * distanceToCamera.z);
@@ -126,8 +115,37 @@ void TerrainChunk::Update(float t) {
         newMipLevel++;
       }
 
-      if (newMipLevel == numMipLevels - 1) {
+      while (newMipLevel > numMipLevels - 4) {
         newMipLevel--;
+      }
+
+      if (newMipLevel != currentMipLevel) {
+        currentMipLevel = newMipLevel;
+        refresh = true;
+      }
+      else {
+        refresh = false;
+      }
+    }
+  }
+}
+
+void TerrainChunk::Update(float t) {
+  if (visible) {
+    GameObject::Update(t);
+
+    if (cameraMoved) {
+      if (north && north->refresh) {
+        refresh = true;
+      }
+      else if (south && south->refresh) {
+        refresh = true;
+      }
+      else if (east && east->refresh) {
+        refresh = true;
+      }
+      else if (west && west->refresh) {
+        refresh = true;
       }
 
       //int newMipLevel = currentMipLevel;
@@ -139,16 +157,9 @@ void TerrainChunk::Update(float t) {
       //  }
       //}
 
-      if (currentMipLevel != newMipLevel) {
-        D3D11_MAPPED_SUBRESOURCE mappedData;
-        immediateContext->Map(indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-        UINT* data = reinterpret_cast<UINT*>(mappedData.pData);
-
-        for (int i = 0; i < numberOfIndices[newMipLevel]; i++) {
-          data[i] = indices[newMipLevel][i];
-        }
-        immediateContext->Unmap(indexBuffer, 0);
-        currentMipLevel = newMipLevel;
+      if (refresh) {
+        refreshIndexBuffer();
+        cameraMoved = false;
       }
     }
   }
@@ -175,6 +186,38 @@ void TerrainChunk::Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11
     pImmediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
     pImmediateContext->DrawIndexed(numberOfIndices[currentMipLevel], 0, 0);
   }
+}
+
+void TerrainChunk::refreshIndexBuffer() {
+  int heightOffSet = zOffset * height * (terrainWidth + 1);
+  int widthOffset = xOffset * width;
+
+  D3D11_MAPPED_SUBRESOURCE mappedData;
+  immediateContext->Map(indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+  UINT* data = reinterpret_cast<UINT*>(mappedData.pData);
+
+  int scaledIndex;
+  for (int i = 0; i < numberOfIndices[currentMipLevel]; i++) {
+    scaledIndex = indices[currentMipLevel][i] - heightOffSet - widthOffset;
+
+    if (west && west->currentMipLevel > currentMipLevel && scaledIndex % (terrainWidth + 1) == 0) {
+      data[i] = (indices[currentMipLevel][i] & ~west->currentMipLevel);
+    }
+    else if (east && east->currentMipLevel > currentMipLevel && (scaledIndex - width) % (terrainWidth + 1) == 0) {
+      data[i] = (indices[currentMipLevel][i] | east->currentMipLevel);
+    }
+    else if (north && north->currentMipLevel > currentMipLevel && scaledIndex <= width) {
+      data[i] = (indices[currentMipLevel][i] & ~north->currentMipLevel);
+    }
+    else if (south && south->currentMipLevel > currentMipLevel && scaledIndex >= width * (terrainWidth + 1)) {
+      data[i] = (indices[currentMipLevel][i] & ~south->currentMipLevel);
+    }
+    else {
+      data[i] = indices[currentMipLevel][i];
+    }
+  }
+
+  immediateContext->Unmap(indexBuffer, 0);
 }
 
 void TerrainChunk::calcDn2() {
@@ -227,19 +270,4 @@ void TerrainChunk::calcDn2() {
 
 float TerrainChunk::getHeight(int i, int j) {
   return heightMap[(i * (terrainWidth + 1)) + j];
-}
-
-float TerrainChunk::biLinearInterp(int lx, int hx, int ly, int hy, int tx, int ty) {
-  float s00 = heightMap[(lx * (terrainWidth + 1)) + ly];
-  float s01 = heightMap[(hx * (terrainWidth + 1)) + ly];
-  float s10 = heightMap[(lx * (terrainWidth + 1)) + hy];
-  float s11 = heightMap[(hx * (terrainWidth + 1)) + hy];
-
-  int dx = hx - lx;
-  int dtx = tx - lx;
-  float v0 = (s01 - s00) / dx*dtx + s00;
-  float v1 = (s11 - s10) / dx*dtx + s10;
-  float value = (v1 - v0) / (hy - ly)*(ty - ly) + v0;
-
-  return value;
 }

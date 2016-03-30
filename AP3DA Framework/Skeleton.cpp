@@ -116,8 +116,6 @@ void Skeleton::walk() {
       XMStoreFloat3(&facing, XMVector3Normalize(XMVector3Transform(XMLoadFloat3(&facing), XMMatrixRotationY(angle))));
       cout << "facing (" << facing.x << "," << facing.y << "," << facing.z << ")" << endl;
 
-      //XMMATRIX temp = XMMatrixLookAtLH(XMLoadFloat3(&rootInitialPosition), XMLoadFloat3(&waypoints[target]), XMVectorSet(0.0f, 1.0f, 0.0f));
-
       move = 1;
       updateInstanceBuffer = false;
     }

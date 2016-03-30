@@ -121,6 +121,10 @@ private:
   ID3D11RasterizerState* wireframe;
 
   bool _wireFrame = false;
+  bool deferredPipeline = false;
+  bool perlinNoise = true;
+  Material noSpecMaterial;
+  Geometry planeGeometry;
   Terrain *terrain;
   const float TERRAIN_WIDTH = 512.0f;
   const float TERRAIN_DEPTH = 512.0f;

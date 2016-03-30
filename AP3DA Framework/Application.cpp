@@ -40,6 +40,43 @@ bool Application::HandleKeyboard(MSG msg) {
         _wireFrame = !_wireFrame;
       }
       return true;
+    case VK_CONTROL:
+      if (msg.message == WM_KEYDOWN) {
+        deferredPipeline = !deferredPipeline;
+      }
+      return true;
+    case VK_END:
+      if (msg.message == WM_KEYDOWN) {
+        perlinNoise = !perlinNoise;
+        delete terrain;
+        terrain = new Terrain(noSpecMaterial);
+
+        if (perlinNoise) {
+          terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
+        }
+        else {
+          terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
+        }
+
+        terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
+
+        _pPlaneVertexBuffer->Release();
+
+        if (FAILED(initTerrainVertexBuffer())) {
+          Cleanup();
+          return E_FAIL;
+        }
+
+        planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
+        terrain->setGeometry(planeGeometry);
+        terrain->SetPosition(0.0f, 0.0f, 0.0f);
+
+        skeleton->setTerrain(terrain);
+        for (auto camera : cameras) {
+          camera->move(0.0f, *terrain);
+        }
+      }
+      return true;
     case VK_SPACE:
       cameras[selectedCamera]->moveY(_cameraSpeed * 0.2f);
       return true;
@@ -109,6 +146,8 @@ void Application::handleMouseMovement(WPARAM buttonStates, int x, int y) {
 
     cameras[selectedCamera]->rotatePitch(yRotation);
     cameras[selectedCamera]->rotateYaw(xRotation);
+
+    terrain->cameraRotated();
 
     lastMousePosX = x;
     lastMousePosY = y;
@@ -200,7 +239,6 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   _WindowWidth = rc.right - rc.left;
   _WindowHeight = rc.bottom - rc.top;
 
-  Material noSpecMaterial;
   noSpecMaterial.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
   noSpecMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
   noSpecMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -246,15 +284,15 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\snow.dds", nullptr, &terrainTextureRV4);
   CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\blend.dds", nullptr, &blendMap);
 
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
+  //_pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
+  //_pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  //_pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
+  //_pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
   //_pImmediateContext->PSSetShaderResources(5, 1, &terrainTextureRV5);
   //_pImmediateContext->PSSetShaderResources(6, 1, &blendMap);
 
   // Setup Camera
-  XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -10.0f);
+  XMFLOAT3 eye = XMFLOAT3(0.0f, terrain->getCameraHeight(0.0f, -10.f) + 2.0f, -10.0f);
   XMFLOAT3 at = XMFLOAT3(0.0f, 0.0f, 1.0f);
   XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
@@ -282,7 +320,6 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   skeletonGeometry.vertexBufferOffset = 0;
   skeletonGeometry.vertexBufferStride = sizeof(SimpleVertex);
 
-  Geometry planeGeometry;
   planeGeometry.indexBuffer = _pPlaneIndexBuffer;
   planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
   planeGeometry.numberOfIndices = terrain->getNumIndices();
@@ -451,33 +488,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   skeleton->setAnimation(animation);
   skeleton->addWaypoint(XMFLOAT3(-50.0f, 0.0f, 50.0f));
   skeleton->addWaypoint(XMFLOAT3(-50.0f, 0.0f, -50.0f));
-  skeleton->addWaypoint(XMFLOAT3(50.0f, 0.0f, 50.0f));
   skeleton->addWaypoint(XMFLOAT3(50.0f, 0.0f, -50.0f));
+  skeleton->addWaypoint(XMFLOAT3(50.0f, 0.0f, 50.0f));
   skeleton->setTerrain(terrain);
-
-  //gameObject = new GameObject("Cube 2", cubeGeometry, shinyMaterial);
-  //gameObject->SetScale(0.5f, 0.5f, 0.5f);
-  //gameObject->SetPosition(-203.0f, -74.0f, -200.0f);
-  //gameObject->SetTextureRV(_pTextureRV);
-
-  //_gameObjects.push_back(gameObject);
-
-  //Chunk* chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  //chunk->SetPosition(0.0, 0.0, 0.0);
-  //chunk->perlinNoise2D(time(0), 8, 8, 4, 0.5, 4);
-  //chunk->perlinNoise3D(time(0), 8, 8, 16, 4, 0.5, 1);
-  //chunk->Update(0);
-  //chunks.push_back(chunk);
-
-  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  //chunk->SetPosition(-16.0, 0.0, 0.0);
-  //chunk->Update(0);
-  //chunks.push_back(chunk);
-
-  //chunk = new Chunk(16, 8, 8, cubeGeometry, voxelMaterial, _pd3dDevice, _pImmediateContext);
-  //chunk->SetPosition(16.0, 0.0, 0.0);
-  //chunk->Update(0);
-  //chunks.push_back(chunk);
 
   return S_OK;
 }
@@ -1378,9 +1391,14 @@ void Application::Update() {
   //cameras[selectedCamera]->SetPosition(cameraPos);
   cameras[selectedCamera]->Update();
 
-  XMVECTOR toLight = XMLoadFloat3(&XMFLOAT3(-0.57735f, 0.57735f, -0.57735f));
-  toLight = XMVector3Transform(toLight, XMMatrixRotationY(t));
-  XMStoreFloat3(&basicLight.LightVecW, toLight);
+  if (!deferredPipeline) {
+    XMVECTOR toLight = XMLoadFloat3(&XMFLOAT3(-0.57735f, 0.57735f, -0.57735f));
+    toLight = XMVector3Transform(toLight, XMMatrixRotationY(t));
+    XMStoreFloat3(&basicLight.LightVecW, toLight);
+  }
+  else {
+    basicLight.LightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
+  }
 
   // Update objects
 
@@ -1406,8 +1424,16 @@ void Application::Update() {
   XMStoreFloat4(&nearPlane, XMVector4Normalize(XMLoadFloat4(&nearPlane)));
   XMStoreFloat4(&farPlane, XMVector4Normalize(XMLoadFloat4(&farPlane)));
 
+  XMFLOAT4 planes[6];
+  planes[0] = leftPlane;
+  planes[1] = rightPlane;
+  planes[2] = topPlane;
+  planes[3] = bottomPlane;
+  planes[4] = nearPlane;
+  planes[5] = farPlane;
+
   terrain->setCameraPosition(cameras[selectedCamera]->GetPosition());
-  terrain->frustumCull(leftPlane, rightPlane, topPlane, bottomPlane, nearPlane, farPlane);
+  terrain->frustumCull(planes);
   terrain->Update(timeSinceStart);
   //for (auto chunk : chunks) {
   //  chunk->Update(timeSinceStart);
@@ -1571,10 +1597,10 @@ void Application::renderToTextures(ConstantBuffer& cb) {
   cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
   cb.HasTexture = 1.0f;
   _pImmediateContext->PSSetShader(deferredTerrainPixelShader, nullptr, 0);
-  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV4);
+  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
+  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
+  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
 
   // Update constant buffer
   _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
@@ -1862,8 +1888,12 @@ void Application::Draw() {
   // Clear buffers
   //
 
-  shadowMapping();
-  //deferredRendering();
+  if (!deferredPipeline) {
+    shadowMapping();
+  }
+  else {
+    deferredRendering();
+  }
 
   //
   // Present our back buffer to our front buffer

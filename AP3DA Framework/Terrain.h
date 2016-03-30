@@ -29,7 +29,8 @@ public:
   void cleanupTerrain();
 
   void setCameraPosition(XMFLOAT3 cameraPosition);
-  void frustumCull(XMFLOAT4 leftPlane, XMFLOAT4 rightPlane, XMFLOAT4 topPlane, XMFLOAT4 bottomPlane, XMFLOAT4 nearPlane, XMFLOAT4 farPlane);
+  void cameraRotated();
+  void frustumCull(XMFLOAT4* frustumPlanes);
   void Update(float t) override;
   void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
 private:
@@ -38,7 +39,6 @@ private:
   SimpleVertex* vertices;
   UINT* indices;
   float* heightMap;
-  float** heightMap2;
   vector<TerrainChunk*> chunks;
   Material material;
   static const int CHUNK_HEIGHT = 64;
@@ -48,6 +48,6 @@ private:
   void generateIndices(float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext);
   void generateNormals();
   void setChunkCentres();
+  void setNeighbouringChunks();
   float getHeight(int i, int j);
-  float getHeight2(int i, int j);
 };
