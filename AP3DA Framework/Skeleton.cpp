@@ -87,7 +87,7 @@ void Skeleton::walk() {
       runAnimation(animation);
       float xDifference = abs(rootInitialPosition.x - waypoints[target].x);
       float zDifference = abs(rootInitialPosition.z - waypoints[target].y);
-      float lerpParam = max(xDifference, zDifference) * 50.0f;
+      float lerpParam = max(xDifference, zDifference) * 10.0f;
       XMFLOAT3 newPos;
       XMStoreFloat3(&newPos, XMVectorLerp(XMLoadFloat3(&rootInitialPosition), XMLoadFloat3(&waypoints[target]), move / (float) lerpParam));
       newPos.y = terrain->getCameraHeight(newPos.x, newPos.z) + 13.5;
@@ -100,18 +100,25 @@ void Skeleton::walk() {
       target = target == waypoints.size() - 1 ? 0 : target + 1;
      
       XMVECTOR toTarget = XMLoadFloat3(&waypoints[target]) - XMLoadFloat3(&XMFLOAT3(rootInitialPosition.x, 0.0f, rootInitialPosition.z));
-      XMFLOAT3 dotProduct;
-      XMStoreFloat3(&dotProduct, XMVector3Dot(XMVector3Normalize(XMLoadFloat3(&facing)), XMVector3Normalize(toTarget)));
-      float angle = acos(dotProduct.x);
+      toTarget = XMVector3Normalize(toTarget);
+      XMFLOAT3 temp;
+      XMStoreFloat3(&temp, toTarget);
+      float angle = atan2(temp.x, temp.z) * (180.0 / XM_PI);
 
-      if (waypoints[target].x < 0) {
-        angle *= -1;
-      }
+      // Convert rotation into radians.
+      //float rotation = (float) angle * 0.0174532925f;
+      //XMFLOAT3 dotProduct;
+      //XMStoreFloat3(&dotProduct, XMVector3Dot(XMVector3Normalize(XMLoadFloat3(&facing)), XMVector3Normalize(toTarget)));
+      //float angle = acos(dotProduct.x);
+
+      //if (waypoints[target].x < 0) {
+      //  angle *= -1;
+      //}
 
       cout << "angle " << XMConvertToDegrees(angle) << endl;
 
       XMFLOAT3 rotation = root->getWorldRotation();
-      rotation.y = angle;
+      rotation.y = (float) angle * 0.0174532925f;
       root->setWorldRotation(rotation);
       XMStoreFloat3(&facing, XMVector3Normalize(XMVector3Transform(XMLoadFloat3(&facing), XMMatrixRotationY(angle))));
       cout << "facing (" << facing.x << "," << facing.y << "," << facing.z << ")" << endl;

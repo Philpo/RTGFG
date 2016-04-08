@@ -21,7 +21,7 @@
         <rotation x="0.0" y="0.0" z="0.0" />
       </bone>
     </frame>
-    <frame num_frames="1000">
+    <frame num_frames="100">
       <bone id="6">
         <rotation x="0.0" y="90.0" z="90.0" />
       </bone>
@@ -35,7 +35,7 @@
         <rotation x="90.0" y="0.0" z="0.0" />
       </bone>
     </frame>
-    <frame num_frames="1000">
+    <frame num_frames="100">
       <bone id="6">
         <rotation x="0.0" y="0.0" z="90.0" />
       </bone>
@@ -49,7 +49,7 @@
         <rotation x="0.0" y="0.0" z="0.0" />
       </bone>
     </frame>
-    <frame num_frames="1000">
+    <frame num_frames="100">
       <bone id="4">
         <rotation x="0.0" y="-90.0" z="-90.0" />
       </bone>
@@ -63,7 +63,7 @@
         <rotation x="90.0" y="0.0" z="0.0" />
       </bone>
     </frame>
-    <frame num_frames="1000">
+    <frame num_frames="100">
       <bone id="4">
         <rotation x="0.0" y="0.0" z="-90.0" />
       </bone>
