@@ -58,6 +58,7 @@ struct VS_OUTPUT {
   float4 shadowPos : TEXCOORD1;
 };
 
+// taken from Frank Luna 3D Game Programming with DirectX 11
 float calcShadowFactor(float4 shadowPos) {
   float depth = shadowPos.z - 0.002f;
 
@@ -78,13 +79,10 @@ float calcShadowFactor(float4 shadowPos) {
   return percentLit /= 9.0f;
 }
 
-float4 SHADOW_PS(VS_OUTPUT input) : SV_Target {
+float4 SHADOW_PS(DomainOut input) : SV_Target {
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
-  //shadowColour = shadowMap.Sample(samLinear, input.shadowPos.xy).rgb;
   shadowColour.r = calcShadowFactor(input.shadowPos);
-  //return float4(depth, depth, depth, 1.0f);
-  //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
 
   float3 normalW = normalize(input.normW);
 
@@ -97,36 +95,25 @@ float4 SHADOW_PS(VS_OUTPUT input) : SV_Target {
   float3 diffuse = float3(0.0f, 0.0f, 0.0f);
   float3 specular = float3(0.0f, 0.0f, 0.0f);
 
-  float3 lightLecNorm = normalize(light.lightVecW);
+  float3 lightVecNorm = normalize(light.lightVecW);
   // Compute Colour
 
   // Compute the reflection vector.
-  float3 r = reflect(-lightLecNorm, normalW);
+  float3 r = reflect(-lightVecNorm, normalW);
 
   // Determine how much specular light makes it into the eye.
   float specularAmount = pow(max(dot(r, toEye), 0.0f), light.specularPower);
 
   // Determine the diffuse light intensity that strikes the vertex.
-  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+  float diffuseAmount = max(dot(lightVecNorm, normalW), 0.0f);
 
   // Only display specular when there is diffuse
   if (diffuseAmount <= 0.0f) {
     specularAmount = 0.0f;
   }
 
-  // Compute the ambient, diffuse, and specular terms separately.
-  //if (depth <= shadowColour.r) {
-  //  diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  //  specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
-  //}
-  //else {
-  //  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  //  specular += shadowColour.r * (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
-  //}
   diffuse += shadowColour.r * (diffuseAmount * (surface.diffuseMtrl * light.diffuseLight).rgb);
   specular += shadowColour.r * (specularAmount * (surface.specularMtrl * light.specularLight).rgb);
-  //specular += (specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb);
-  //diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
   ambient += (surface.ambientMtrl * light.ambientLight).rgb;
 
   // Sum all the terms together and copy over the diffuse alpha.
@@ -144,13 +131,10 @@ float4 SHADOW_PS(VS_OUTPUT input) : SV_Target {
   return finalColour;
 }
 
-float4 SHADOW_TERRAIN_PS(VS_OUTPUT input) : SV_Target{
+float4 SHADOW_TERRAIN_PS(DomainOut input) : SV_Target{
   float depth = input.shadowPos.z - 0.001f;
   float3 shadowColour = float3(1.0f, 1.0f, 1.0f);
-  //shadowColour = shadowMap.Sample(samLinear, input.shadowPos.xy).rgb;
   shadowColour.r = calcShadowFactor(input.shadowPos);
-  //return float4(depth, depth, depth, 1.0f);
-  //return float4(shadowColour.r, shadowColour.r, shadowColour.r, 1.0f);
 
   float3 normalW = normalize(input.normW);
 
@@ -183,19 +167,12 @@ float4 SHADOW_TERRAIN_PS(VS_OUTPUT input) : SV_Target{
   float3 ambient = float3(0.0f, 0.0f, 0.0f);
   float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 
-  float3 lightLecNorm = normalize(light.lightVecW);
+  float3 lightVecNorm = normalize(light.lightVecW);
   // Compute Colour
 
   // Determine the diffuse light intensity that strikes the vertex.
-  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+  float diffuseAmount = max(dot(lightVecNorm, normalW), 0.0f);
 
-  // Compute the ambient, diffuse, and specular terms separately.
-  //if (depth <= shadowColour.r) {
-  //  diffuse += (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  //}
-  //else {
-  //  diffuse += shadowColour.r * (diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb);
-  //}
   diffuse += shadowColour.r * (diffuseAmount * (surface.diffuseMtrl * light.diffuseLight).rgb);
   ambient += (surface.ambientMtrl * light.ambientLight).rgb;
 

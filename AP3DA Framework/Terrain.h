@@ -6,9 +6,12 @@
 #include <vector>
 #include <fstream>
 #include <noise\noise.h>
+#include "noiseutils.h"
 #include <iostream>
 
 struct SimpleVertex;
+
+using namespace noise;
 
 class Terrain : public GameObject {
 public:
@@ -26,13 +29,12 @@ public:
   void circleHill(int height, int width, int seedValue, int iterations, int radiusMin, int radiusMax);
   void perlinNoise(int height, int width, double lowerXBound, double upperXBound, double lowerZBound, double upperZBound);
   void generateGeometry(int height, int width, float nearPlane, float nearTopLeft, float tau, float verticalResolution, ID3D11Device* const device, ID3D11DeviceContext* const immediateContext, float cellWidth = 1.0f, float cellDepth = 1.0f);
-  void cleanupTerrain();
 
   void setCameraPosition(XMFLOAT3 cameraPosition);
   void cameraRotated();
   void frustumCull(XMFLOAT4* frustumPlanes);
-  void Update(float t) override;
-  void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
+  void update(float t) override;
+  void draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
 private:
   int numVertices, numIndices;
   float terrainHeight, terrainWidth, dX, dZ;

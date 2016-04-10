@@ -21,23 +21,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
   return 0;
 }
 
-bool Application::HandleKeyboard(MSG msg) {
+bool Application::handleKeyboard(MSG msg) {
   switch (msg.wParam) {
     case VK_UP:
-      cameras[selectedCamera]->move(_cameraSpeed * 0.2f, *terrain);
+      cameras[selectedCamera]->move(cameraSpeed * 0.2f, *terrain);
       return true;
     case VK_DOWN:
-      cameras[selectedCamera]->move(_cameraSpeed * -0.2f, *terrain);
+      cameras[selectedCamera]->move(cameraSpeed * -0.2f, *terrain);
       return true;
     case VK_RIGHT:
-      cameras[selectedCamera]->strafe(_cameraSpeed * 0.2f, *terrain);
+      cameras[selectedCamera]->strafe(cameraSpeed * 0.2f, *terrain);
       return true;
     case VK_LEFT:
-      cameras[selectedCamera]->strafe(_cameraSpeed * -0.2f, *terrain);
+      cameras[selectedCamera]->strafe(cameraSpeed * -0.2f, *terrain);
       return true;
     case VK_SHIFT:
       if (msg.message == WM_KEYDOWN) {
-        _wireFrame = !_wireFrame;
+        wireFrame = !wireFrame;
       }
       return true;
     case VK_CONTROL:
@@ -58,18 +58,18 @@ bool Application::HandleKeyboard(MSG msg) {
           terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
         }
 
-        terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
+        terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, renderHeight, d3dDevice, immediateContext, CELL_WIDTH, CELL_DEPTH);
 
-        _pPlaneVertexBuffer->Release();
+        planeVertexBuffer->Release();
 
         if (FAILED(initTerrainVertexBuffer())) {
-          Cleanup();
+          cleanup();
           return E_FAIL;
         }
 
-        planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
+        planeGeometry.vertexBuffer = planeVertexBuffer;
         terrain->setGeometry(planeGeometry);
-        terrain->SetPosition(0.0f, 0.0f, 0.0f);
+        terrain->setPosition(0.0f, 0.0f, 0.0f);
 
         skeleton->setTerrain(terrain);
         for (auto camera : cameras) {
@@ -78,53 +78,53 @@ bool Application::HandleKeyboard(MSG msg) {
       }
       return true;
     case VK_SPACE:
-      cameras[selectedCamera]->moveY(_cameraSpeed * 0.2f);
+      cameras[selectedCamera]->moveY(cameraSpeed * 0.2f);
       return true;
     case VK_TAB:
       if (msg.message == WM_KEYDOWN) {
         selectedCamera = selectedCamera == cameras.size() - 1 ? 0 : selectedCamera + 1;
       }
       return true;
-    case 0x57:
+    case 0x57: // W
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->getWorldRotation();
+        XMFLOAT3 rotation = bones[1]->getOriginRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        bones[1]->setWorldRotation(rotation);
+        bones[1]->setOriginRotation(rotation);
       }
       return true;
-    case 0x53:
+    case 0x53: // S
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->getWorldRotation();
+        XMFLOAT3 rotation = bones[1]->getOriginRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        bones[1]->setWorldRotation(rotation);
+        bones[1]->setOriginRotation(rotation);
       }
       return true;
-    case 0x41:
+    case 0x41: // A
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->getWorldRotation();
+        XMFLOAT3 rotation = bones[1]->getOriginRotation();
         rotation.y += XMConvertToRadians(-10.0f);
-        bones[1]->setWorldRotation(rotation);
+        bones[1]->setOriginRotation(rotation);
       }
       return true;
-    case 0x44:
+    case 0x44: // D
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[1]->getWorldRotation();
+        XMFLOAT3 rotation = bones[1]->getOriginRotation();
         rotation.y += XMConvertToRadians(10.0f);
-        bones[1]->setWorldRotation(rotation);
+        bones[1]->setOriginRotation(rotation);
       }
       return true;
-    case 0x45:
+    case 0x45: // E
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[0]->getWorldRotation();
+        XMFLOAT3 rotation = bones[0]->getOriginRotation();
         rotation.x += XMConvertToRadians(-10.0f);
-        bones[0]->setWorldRotation(rotation);;
+        bones[0]->setOriginRotation(rotation);;
       }
       return true;
-    case 0x51:
+    case 0x51: // Q
       if (msg.message == WM_KEYDOWN) {
-        XMFLOAT3 rotation = bones[0]->getWorldRotation();
+        XMFLOAT3 rotation = bones[0]->getOriginRotation();
         rotation.x += XMConvertToRadians(10.0f);
-        bones[0]->setWorldRotation(rotation);
+        bones[0]->setOriginRotation(rotation);
       }
       return true;
   }
@@ -155,173 +155,98 @@ void Application::handleMouseMovement(WPARAM buttonStates, int x, int y) {
 }
 
 Application::Application() : lastMousePosX(0.0f), lastMousePosY(0.0f) {
-  _hInst = nullptr;
-  _hWnd = nullptr;
-  _driverType = D3D_DRIVER_TYPE_NULL;
-  _featureLevel = D3D_FEATURE_LEVEL_11_0;
-  _pd3dDevice = nullptr;
-  _pImmediateContext = nullptr;
-  _pSwapChain = nullptr;
-  _pRenderTargetView = nullptr;
-  _pVertexShader = nullptr;
+  hInst = nullptr;
+  hWnd = nullptr;
+  driverType = D3D_DRIVER_TYPE_NULL;
+  featureLevel = D3D_FEATURE_LEVEL_11_0;
+  d3dDevice = nullptr;
+  immediateContext = nullptr;
+  swapChain = nullptr;
+  renderTargetView = nullptr;
+  vertexShader = nullptr;
   shadowPixelShader = nullptr;
-  _pVertexLayout = nullptr;
-  _pVertexBuffer = nullptr;
-  _pIndexBuffer = nullptr;
-  _pConstantBuffer = nullptr;
+  vertexLayout = nullptr;
+  vertexBuffer = nullptr;
+  indexBuffer = nullptr;
+  constantBuffer = nullptr;
 
-  DSLessEqual = nullptr;
-  RSCullNone = nullptr;
+  dsLessEqual = nullptr;
+  rsCullNone = nullptr;
 }
 
 Application::~Application() {
-  Cleanup();
+  cleanup();
 }
 
-HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
-  if (FAILED(InitWindow(hInstance, nCmdShow))) {
+HRESULT Application::initialise(HINSTANCE hInstance, int nCmdShow) {
+  if (FAILED(initWindow(hInstance, nCmdShow))) {
     return E_FAIL;
   }
 
   AllocConsole();
   freopen("CONOUT$", "wb", stdout);
 
-  //module::RidgedMulti mountainTerrain;
-  //module::Billow baseFlatTerrain;
-  //baseFlatTerrain.SetFrequency(2.0);
-  //module::ScaleBias flatTerrain;
-  //flatTerrain.SetSourceModule(0, baseFlatTerrain);
-  //flatTerrain.SetScale(0.125);
-  //flatTerrain.SetBias(-0.75);
-  //module::Perlin terrainType;
-  //terrainType.SetFrequency(0.5);
-  //terrainType.SetPersistence(0.25); 
-  //module::Select terrainSelector;
-  //terrainSelector.SetSourceModule(0, flatTerrain);
-  //terrainSelector.SetSourceModule(1, mountainTerrain);
-  //terrainSelector.SetControlModule(terrainType);
-  //terrainSelector.SetBounds(0.0, 1000.0);
-  //terrainSelector.SetEdgeFalloff(0.125); 
-  //module::Turbulence finalTerrain;
-  //finalTerrain.SetSourceModule(0, terrainSelector);
-  //finalTerrain.SetFrequency(4.0);
-  //finalTerrain.SetPower(0.125);
-  //utils::NoiseMap heightMap;
-  //utils::NoiseMapBuilderPlane heightMapBuilder;
-  //heightMapBuilder.SetSourceModule(finalTerrain);
-  ////heightMapBuilder.SetSourceModule(mountainTerrain);
-  //heightMapBuilder.SetDestNoiseMap(heightMap);
-  //heightMapBuilder.SetDestSize(TERRAIN_WIDTH, TERRAIN_DEPTH);
-  //heightMapBuilder.SetBounds(6.0, 10.0, 1.0, 5.0);
-  //heightMapBuilder.Build();
-
-  //utils::RendererImage renderer;
-  //utils::Image image;
-  //renderer.SetSourceNoiseMap(heightMap);
-  //renderer.SetDestImage(image);
-  //renderer.ClearGradient();
-  //renderer.AddGradientPoint(-1.00, utils::Color(32, 160, 0, 255)); // grass
-  //renderer.AddGradientPoint(-0.25, utils::Color(224, 224, 0, 255)); // dirt
-  //renderer.AddGradientPoint(0.25, utils::Color(128, 128, 128, 255)); // rock
-  //renderer.AddGradientPoint(1.00, utils::Color(255, 255, 255, 255)); // snow
-  //renderer.EnableLight();
-  //renderer.SetLightContrast(3.0);
-  //renderer.SetLightBrightness(2.0);
-  //renderer.Render();
-
-  //utils::WriterBMP writer;
-  //writer.SetSourceImage(image);
-  //writer.SetDestFilename("tutorial.bmp");
-  //writer.WriteDestFile();
-
   RECT rc;
-  GetClientRect(_hWnd, &rc);
-  _WindowWidth = rc.right - rc.left;
-  _WindowHeight = rc.bottom - rc.top;
+  GetClientRect(hWnd, &rc);
+  windowWidth = rc.right - rc.left;
+  windowHeight = rc.bottom - rc.top;
 
   noSpecMaterial.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
   noSpecMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
   noSpecMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
   noSpecMaterial.specularPower = 0.0f;
 
-  Material oceanMaterial;
-  oceanMaterial.ambient = XMFLOAT4(0.0f, 0.0f, 0.1f, 0.1f);
-  oceanMaterial.diffuse = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.1f);
-  oceanMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-  oceanMaterial.specularPower = 0.0f;
-
-  Material voxelMaterial;
-  voxelMaterial.ambient = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
-  voxelMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-  voxelMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-  voxelMaterial.specularPower = 0.0f;
-
-  if (FAILED(InitDevice())) {
-    Cleanup();
+  if (FAILED(initDevice())) {
+    cleanup();
 
     return E_FAIL;
   }
 
   terrain = new Terrain(noSpecMaterial);
-  //terrain->loadHeightMap(TERRAIN_DEPTH, TERRAIN_WIDTH, "Resources\\coastMountain513.raw");
-  //terrain->diamondSquare(TERRAIN_DEPTH, time(0), 1.0f, 255.0f);
-  //terrain->circleHill(TERRAIN_DEPTH, TERRAIN_WIDTH, time(0), 20000, 2, 2);
-  double seed = time(0);
-  double seed2 = time(0);
   terrain->perlinNoise(TERRAIN_DEPTH, TERRAIN_WIDTH, 6.0, 10.0, 1.0, 5.0);
-  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, _renderHeight, _pd3dDevice, _pImmediateContext, CELL_WIDTH, CELL_DEPTH);
+  terrain->generateGeometry(TERRAIN_DEPTH, TERRAIN_WIDTH, 1.0f, 1.0f * tan(XM_PIDIV4), 16, renderHeight, d3dDevice, immediateContext, CELL_WIDTH, CELL_DEPTH);
 
   if (FAILED(initTerrainVertexBuffer())) {
-    Cleanup();
+    cleanup();
     return E_FAIL;
   }
 
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &_pTextureRV);
-  //CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\grass.dds", nullptr, &terrainTextureRV1);
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\darkdirt.dds", nullptr, &terrainTextureRV2);
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\stone.dds", nullptr, &terrainTextureRV3);
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\lightdirt.dds", nullptr, &terrainTextureRV1);
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\snow.dds", nullptr, &terrainTextureRV4);
-  CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\blend.dds", nullptr, &blendMap);
-
-  //_pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV1);
-  //_pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  //_pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV3);
-  //_pImmediateContext->PSSetShaderResources(4, 1, &terrainTextureRV4);
-  //_pImmediateContext->PSSetShaderResources(5, 1, &terrainTextureRV5);
-  //_pImmediateContext->PSSetShaderResources(6, 1, &blendMap);
+  CreateDDSTextureFromFile(d3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &textureRV);
+  CreateDDSTextureFromFile(d3dDevice, L"Resources\\darkdirt.dds", nullptr, &terrainTextureRV2);
+  CreateDDSTextureFromFile(d3dDevice, L"Resources\\stone.dds", nullptr, &terrainTextureRV3);
+  CreateDDSTextureFromFile(d3dDevice, L"Resources\\lightdirt.dds", nullptr, &terrainTextureRV1);
+  CreateDDSTextureFromFile(d3dDevice, L"Resources\\snow.dds", nullptr, &terrainTextureRV4);
 
   // Setup Camera
   XMFLOAT3 eye = XMFLOAT3(0.0f, terrain->getCameraHeight(0.0f, -10.f) + 2.0f, -10.0f);
   XMFLOAT3 at = XMFLOAT3(0.0f, 0.0f, 1.0f);
   XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-  cameras.push_back(new Camera(true, true, eye, at, up, (float) _renderWidth, (float) _renderHeight, 1.0f, 1000.0f));
-  cameras.push_back(new Camera(true, false, eye, at, up, (float) _renderWidth, (float) _renderHeight, 1.0f, 1000.0f));
+  cameras.push_back(new Camera(true, true, eye, at, up, (float) renderWidth, (float) renderHeight, 1.0f, 1000.0f));
+  cameras.push_back(new Camera(true, false, eye, at, up, (float) renderWidth, (float) renderHeight, 1.0f, 1000.0f));
 
   // Setup the scene's light
-  basicLight.AmbientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-  basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-  basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+  basicLight.ambientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+  basicLight.diffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+  basicLight.specularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
   basicLight.SpecularPower = 20.0f;
-  basicLight.LightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
+  basicLight.lightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
 
   Geometry cubeGeometry;
-  cubeGeometry.indexBuffer = _pIndexBuffer;
-  cubeGeometry.vertexBuffer = _pVertexBuffer;
+  cubeGeometry.indexBuffer = indexBuffer;
+  cubeGeometry.vertexBuffer = vertexBuffer;
   cubeGeometry.numberOfIndices = 36;
   cubeGeometry.vertexBufferOffset = 0;
   cubeGeometry.vertexBufferStride = sizeof(SimpleVertex);
 
   Geometry skeletonGeometry;
-  skeletonGeometry.indexBuffer = _pIndexBuffer;
+  skeletonGeometry.indexBuffer = indexBuffer;
   skeletonGeometry.vertexBuffer = skeletonVertexBuffer;
   skeletonGeometry.numberOfIndices = 36;
   skeletonGeometry.vertexBufferOffset = 0;
   skeletonGeometry.vertexBufferStride = sizeof(SimpleVertex);
 
-  planeGeometry.indexBuffer = _pPlaneIndexBuffer;
-  planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
+  planeGeometry.vertexBuffer = planeVertexBuffer;
   planeGeometry.numberOfIndices = terrain->getNumIndices();
   planeGeometry.vertexBufferOffset = 0;
   planeGeometry.vertexBufferStride = sizeof(SimpleVertex);
@@ -333,144 +258,138 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   shinyMaterial.specularPower = 10.0f;
 
   terrain->setGeometry(planeGeometry);
-  terrain->SetPosition(0.0f, 0.0f, 0.0f);
-
-  GameObject * gameObject = new GameObject("Cube 1", cubeGeometry, shinyMaterial);
-  gameObject->SetPosition(0.0f, 2.0f, -2.0f);
-  gameObject->SetTextureRV(_pTextureRV);
-
-  //_gameObjects.push_back(gameObject);
+  terrain->setPosition(0.0f, 0.0f, 0.0f);
 
   GameObject* root = new GameObject("root", skeletonGeometry, shinyMaterial);
-  root->SetPosition(0.0f, 2.0f, -2.0f);
-  root->SetScale(0.25f, 0.25f, 2.0f);
-  root->SetRotation(0.0f, 0.0f, 0.0f);
+  root->setPosition(0.0f, 2.0f, -2.0f);
+  root->setScale(0.25f, 0.25f, 2.0f);
+  root->setRotation(0.0f, 0.0f, 0.0f);
   bones.push_back(root);
 
   GameObject* node1 = new GameObject("node1", skeletonGeometry, shinyMaterial);
-  node1->SetParent(root);
-  node1->SetPosition(0.0f, 0.0f, 4.0f);
-  node1->SetRotation(0.0f, 0.0f, 0.0f);
-  node1->SetScale(0.25f, 0.25f, 2.0f);
+  node1->setParent(root);
+  node1->setPosition(0.0f, 0.0f, 4.0f);
+  node1->setRotation(0.0f, 0.0f, 0.0f);
+  node1->setScale(0.25f, 0.25f, 2.0f);
   bones.push_back(node1);
 
-  skeleton = new Skeleton(17, _pd3dDevice, _pImmediateContext);
+  skeleton = new Skeleton(17, d3dDevice, immediateContext);
 
   bone1 = new GameObject("head", skeletonGeometry, shinyMaterial);
-  bone1->SetPosition(-4.0f, terrain->getCameraHeight(-4.0f, -2.0f) + 13.5f, -2.0f);
-  bone1->SetRotation(0.0f, 0.0f, 0.0f);
+  bone1->setPosition(-4.0f, terrain->getCameraHeight(-4.0f, -2.0f) + 13.5f, -2.0f);
+  bone1->setRotation(0.0f, 0.0f, 0.0f);
   skeleton->addBone(bone1);
 
   GameObject* bone2 = new GameObject("neck", skeletonGeometry, shinyMaterial);
-  bone2->SetParent(bone1);
-  bone2->SetPosition(0.0f, -1.0f, 1.0f);
-  bone2->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone2->SetScale(0.25f, 0.25f, 0.5f);
+  bone2->setParent(bone1);
+  bone2->setPosition(0.0f, -1.0f, 1.0f);
+  bone2->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone2->setScale(0.25f, 0.25f, 0.5f);
   skeleton->addBone(bone2);
 
   GameObject* bone3 = new GameObject("rightshoulder", skeletonGeometry, shinyMaterial);
-  bone3->SetParent(bone2);
-  bone3->SetPosition(0.0f, -1.25f, 0.0f);
-  bone3->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
-  bone3->SetScale(0.25f, 0.25f, 1.0f);
+  bone3->setParent(bone2);
+  bone3->setPosition(0.0f, -1.25f, 0.0f);
+  bone3->setRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone3->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone3);
 
   GameObject* bone4 = new GameObject("leftshoulder", skeletonGeometry, shinyMaterial);
-  bone4->SetParent(bone2);
-  bone4->SetPosition(0.0f, -1.25f, 0.0f);
-  bone4->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
-  bone4->SetScale(0.25f, 0.25f, 1.0f);
+  bone4->setParent(bone2);
+  bone4->setPosition(0.0f, -1.25f, 0.0f);
+  bone4->setRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone4->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone4);
 
   GameObject* bone5 = new GameObject("rightupperarm", skeletonGeometry, shinyMaterial);
-  bone5->SetParent(bone3);
-  bone5->SetPosition(2.0f, 0.0f, 0.0f);
-  bone5->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
-  bone5->SetScale(0.25f, 0.25f, 1.0f);
+  bone5->setParent(bone3);
+  bone5->setPosition(2.0f, 0.0f, 0.0f);
+  bone5->setRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone5->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone5);
 
   GameObject* bone6 = new GameObject("rightlowerarm", skeletonGeometry, shinyMaterial);
-  bone6->SetParent(bone5);
-  bone6->SetPosition(2.0f, 0.0f, 0.0f);
-  bone6->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
-  bone6->SetScale(0.25f, 0.25f, 1.0f);
+  bone6->setParent(bone5);
+  bone6->setPosition(2.0f, 0.0f, 0.0f);
+  bone6->setRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone6->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone6);
 
   GameObject* bone7 = new GameObject("leftupperarm", skeletonGeometry, shinyMaterial);
-  bone7->SetParent(bone4);
-  bone7->SetPosition(-2.0f, 0.0f, 0.0f);
-  bone7->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
-  bone7->SetScale(0.25f, 0.25f, 1.0f);
+  bone7->setParent(bone4);
+  bone7->setPosition(-2.0f, 0.0f, 0.0f);
+  bone7->setRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone7->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone7);
 
   GameObject* bone8 = new GameObject("leftlowerarm", skeletonGeometry, shinyMaterial);
-  bone8->SetParent(bone7);
-  bone8->SetPosition(-2.0f, 0.0f, 0.0f);
-  bone8->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
-  bone8->SetScale(0.25f, 0.25f, 1.0f);
+  bone8->setParent(bone7);
+  bone8->setPosition(-2.0f, 0.0f, 0.0f);
+  bone8->setRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone8->setScale(0.25f, 0.25f, 1.0f);
   skeleton->addBone(bone8);
 
   GameObject* bone9 = new GameObject("back", skeletonGeometry, shinyMaterial);
-  bone9->SetParent(bone2);
-  bone9->SetPosition(0.0f, -1.5f, 0.0f);
-  bone9->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone9->SetScale(0.25f, 0.25f, 2.0f);
+  bone9->setParent(bone2);
+  bone9->setPosition(0.0f, -1.5f, 0.0f);
+  bone9->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone9->setScale(0.25f, 0.25f, 2.0f);
   skeleton->addBone(bone9);
 
   GameObject* bone10 = new GameObject("righthip", skeletonGeometry, shinyMaterial);
-  bone10->SetParent(bone9);
-  bone10->SetPosition(0.0f, -4.25f, 0.0f);
-  bone10->SetRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
-  bone10->SetScale(0.25f, 0.25f, 0.5f);
+  bone10->setParent(bone9);
+  bone10->setPosition(0.0f, -4.25f, 0.0f);
+  bone10->setRotation(0.0f, XMConvertToRadians(90.0f), 0.0f);
+  bone10->setScale(0.25f, 0.25f, 0.5f);
   skeleton->addBone(bone10);
 
   GameObject* bone11 = new GameObject("lefthip", skeletonGeometry, shinyMaterial);
-  bone11->SetParent(bone9);
-  bone11->SetPosition(0.0f, -4.25f, 0.0f);
-  bone11->SetRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
-  bone11->SetScale(0.25f, 0.25f, 0.5f);
+  bone11->setParent(bone9);
+  bone11->setPosition(0.0f, -4.25f, 0.0f);
+  bone11->setRotation(0.0f, XMConvertToRadians(270.0f), 0.0f);
+  bone11->setScale(0.25f, 0.25f, 0.5f);
   skeleton->addBone(bone11);
 
   GameObject* bone12 = new GameObject("rightupperleg", skeletonGeometry, shinyMaterial);
-  bone12->SetParent(bone10);
-  bone12->SetPosition(1.25f, 0.25f, 0.0f);
-  bone12->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone12->SetScale(0.25f, 0.25f, 1.5f);
+  bone12->setParent(bone10);
+  bone12->setPosition(1.25f, 0.25f, 0.0f);
+  bone12->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone12->setScale(0.25f, 0.25f, 1.5f);
   skeleton->addBone(bone12);
 
   GameObject* bone13 = new GameObject("rightlowerleg", skeletonGeometry, shinyMaterial);
-  bone13->SetParent(bone12);
-  bone13->SetPosition(0.0f, -3.0f, 0.0f);
-  bone13->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone13->SetScale(0.25f, 0.25f, 1.5f);
+  bone13->setParent(bone12);
+  bone13->setPosition(0.0f, -3.0f, 0.0f);
+  bone13->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone13->setScale(0.25f, 0.25f, 1.5f);
   skeleton->addBone(bone13);
 
   GameObject* bone14 = new GameObject("leftupperleg", skeletonGeometry, shinyMaterial);
-  bone14->SetParent(bone11);
-  bone14->SetPosition(-1.25f, 0.25f, 0.0f);
-  bone14->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone14->SetScale(0.25f, 0.25f, 1.5f);
+  bone14->setParent(bone11);
+  bone14->setPosition(-1.25f, 0.25f, 0.0f);
+  bone14->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone14->setScale(0.25f, 0.25f, 1.5f);
   skeleton->addBone(bone14);
 
   GameObject* bone15 = new GameObject("leftlowerleg", skeletonGeometry, shinyMaterial);
-  bone15->SetParent(bone14);
-  bone15->SetPosition(0.0f, -3.0f, 0.0f);
-  bone15->SetRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
-  bone15->SetScale(0.25f, 0.25f, 1.5f);
+  bone15->setParent(bone14);
+  bone15->setPosition(0.0f, -3.0f, 0.0f);
+  bone15->setRotation(XMConvertToRadians(90.0f), 0.0f, 0.0f);
+  bone15->setScale(0.25f, 0.25f, 1.5f);
   skeleton->addBone(bone15);
 
   GameObject* bone16 = new GameObject("rightfoot", skeletonGeometry, shinyMaterial);
-  bone16->SetParent(bone13);
-  bone16->SetPosition(0.0f, -3.25f, -0.25f);
-  bone16->SetRotation(0.0f, 0.0f, 0.0f);
-  bone16->SetScale(0.25f, 0.25f, 0.75f);
+  bone16->setParent(bone13);
+  bone16->setPosition(0.0f, -3.25f, -0.25f);
+  bone16->setRotation(0.0f, 0.0f, 0.0f);
+  bone16->setScale(0.25f, 0.25f, 0.75f);
   skeleton->addBone(bone16);
 
   GameObject* bone17 = new GameObject("leftfoot", skeletonGeometry, shinyMaterial);
-  bone17->SetParent(bone15);
-  bone17->SetPosition(0.0f, -3.25f, -0.25f);
-  bone17->SetRotation(0.0f, 0.0f, 0.0f);
-  bone17->SetScale(0.25f, 0.25f, 0.75f);
+  bone17->setParent(bone15);
+  bone17->setPosition(0.0f, -3.25f, -0.25f);
+  bone17->setRotation(0.0f, 0.0f, 0.0f);
+  bone17->setScale(0.25f, 0.25f, 0.75f);
   skeleton->addBone(bone17);
 
   file<> file("test_animation.xml");
@@ -495,12 +414,12 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow) {
   return S_OK;
 }
 
-HRESULT Application::InitShadersAndInputLayout() {
+HRESULT Application::initShadersAndInputLayout() {
   HRESULT hr;
 
   // Compile the vertex shader
   ID3DBlob* pVSBlob = nullptr;
-  hr = CompileShaderFromFile(L"GeneralShaders.fx", "VS", "vs_4_0", &pVSBlob);
+  hr = compileShaderFromFile(L"GeneralShaders.fx", "VS", "vs_4_0", &pVSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -509,7 +428,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the vertex shader
-  hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
+  hr = d3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &vertexShader);
 
   if (FAILED(hr)) {
     pVSBlob->Release();
@@ -517,7 +436,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   ID3DBlob* instanceVSBlob = nullptr;
-  hr = CompileShaderFromFile(L"GeneralShaders.fx", "INSTANCE_VS", "vs_4_0", &instanceVSBlob);
+  hr = compileShaderFromFile(L"GeneralShaders.fx", "INSTANCE_VS", "vs_4_0", &instanceVSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -526,7 +445,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the vertex shader
-  hr = _pd3dDevice->CreateVertexShader(instanceVSBlob->GetBufferPointer(), instanceVSBlob->GetBufferSize(), nullptr, &instanceVertexShader);
+  hr = d3dDevice->CreateVertexShader(instanceVSBlob->GetBufferPointer(), instanceVSBlob->GetBufferSize(), nullptr, &instanceVertexShader);
 
   if (FAILED(hr)) {
     instanceVSBlob->Release();
@@ -536,7 +455,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   // Compile the hull shader
   ID3DBlob* pHSBlob = nullptr;
 
-  hr = CompileShaderFromFile(L"GeneralShaders.fx", "HS", "hs_5_0", &pHSBlob);
+  hr = compileShaderFromFile(L"GeneralShaders.fx", "HS", "hs_5_0", &pHSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -545,16 +464,17 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the control point hull shader
-  hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &controlPointHullShader);
+  hr = d3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &controlPointHullShader);
 
   if (FAILED(hr)) {
     pHSBlob->Release();
     return hr;
   }
+  pHSBlob->Release();
 
   // Compile the domain shader
   ID3DBlob* pDSBlob = nullptr;
-  hr = CompileShaderFromFile(L"GeneralShaders.fx", "DS", "ds_5_0", &pDSBlob);
+  hr = compileShaderFromFile(L"GeneralShaders.fx", "DS", "ds_5_0", &pDSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -563,16 +483,17 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the domain shader
-  hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &domainShader);
+  hr = d3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &domainShader);
 
   if (FAILED(hr)) {
     pDSBlob->Release();
     return hr;
   }
+  pDSBlob->Release();
 
   // Compile the pixel shader
   ID3DBlob* pPSBlob = nullptr;
-  hr = CompileShaderFromFile(L"ShadowMapping.fx", "SHADOW_PS", "ps_4_0", &pPSBlob);
+  hr = compileShaderFromFile(L"ShadowMapping.fx", "SHADOW_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -581,13 +502,13 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowPixelShader);
+  hr = d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"ShadowMapping.fx", "SHADOW_TERRAIN_PS", "ps_4_0", &pPSBlob);
+  hr = compileShaderFromFile(L"ShadowMapping.fx", "SHADOW_TERRAIN_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -596,13 +517,13 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowTerrainPixelShader);
+  hr = d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shadowTerrainPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_PS", "ps_4_0", &pPSBlob);
+  hr = compileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -611,13 +532,13 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredPixelShader);
+  hr = d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_TERRAIN_PS", "ps_4_0", &pPSBlob);
+  hr = compileShaderFromFile(L"DeferredRendering.fx", "DEFERRED_TERRAIN_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -626,13 +547,13 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredTerrainPixelShader);
+  hr = d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &deferredTerrainPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
     return hr;
 
-  hr = CompileShaderFromFile(L"DeferredRendering.fx", "LIGHTING_PS", "ps_4_0", &pPSBlob);
+  hr = compileShaderFromFile(L"DeferredRendering.fx", "LIGHTING_PS", "ps_4_0", &pPSBlob);
 
   if (FAILED(hr)) {
     MessageBox(nullptr,
@@ -641,7 +562,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   }
 
   // Create the pixel shader
-  hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &lightingPixelShader);
+  hr = d3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &lightingPixelShader);
   pPSBlob->Release();
 
   if (FAILED(hr))
@@ -658,8 +579,8 @@ HRESULT Application::InitShadersAndInputLayout() {
   UINT numElements = ARRAYSIZE(layout);
 
   // Create the input layout
-  hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-    pVSBlob->GetBufferSize(), &_pVertexLayout);
+  hr = d3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+    pVSBlob->GetBufferSize(), &vertexLayout);
   pVSBlob->Release();
 
   if (FAILED(hr))
@@ -679,7 +600,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   numElements = ARRAYSIZE(instanceDesc);
 
   // Create the input layout
-  hr = _pd3dDevice->CreateInputLayout(instanceDesc, numElements, instanceVSBlob->GetBufferPointer(),
+  hr = d3dDevice->CreateInputLayout(instanceDesc, numElements, instanceVSBlob->GetBufferPointer(),
     instanceVSBlob->GetBufferSize(), &instanceLayout);
   instanceVSBlob->Release();
 
@@ -687,7 +608,7 @@ HRESULT Application::InitShadersAndInputLayout() {
     return hr;
 
   // Set the input layout
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  immediateContext->IASetInputLayout(vertexLayout);
 
   D3D11_SAMPLER_DESC sampDesc;
   ZeroMemory(&sampDesc, sizeof(sampDesc));
@@ -699,23 +620,7 @@ HRESULT Application::InitShadersAndInputLayout() {
   sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
   sampDesc.MinLOD = 0;
   sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
-
-  //sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-  //sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-  //sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-  //sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-  //sampDesc.MipLODBias = 0.0f;
-  //sampDesc.MaxAnisotropy = 1;
-  //sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-  //sampDesc.BorderColor[0] = 0;
-  //sampDesc.BorderColor[1] = 0;
-  //sampDesc.BorderColor[2] = 0;
-  //sampDesc.BorderColor[3] = 0;
-  //sampDesc.MinLOD = 0;
-  //sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-  //hr = _pd3dDevice->CreateSamplerState(&sampDesc, &s);
+  hr = d3dDevice->CreateSamplerState(&sampDesc, &samplerAnistropic);
 
   sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
   sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -723,12 +628,12 @@ HRESULT Application::InitShadersAndInputLayout() {
   sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
   sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
 
-  hr = _pd3dDevice->CreateSamplerState(&sampDesc, &shadowSampler);
+  hr = d3dDevice->CreateSamplerState(&sampDesc, &shadowSampler);
 
   return hr;
 }
 
-HRESULT Application::InitVertexBuffer() {
+HRESULT Application::initVertexBuffer() {
   HRESULT hr;
 
   // Create vertex buffer
@@ -776,7 +681,7 @@ HRESULT Application::InitVertexBuffer() {
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = vertices;
 
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pVertexBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, &InitData, &vertexBuffer);
 
   if (FAILED(hr))
     return hr;
@@ -817,21 +722,21 @@ HRESULT Application::InitVertexBuffer() {
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = skeletonVertices;
 
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &skeletonVertexBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, &InitData, &skeletonVertexBuffer);
 
   if (FAILED(hr))
     return hr;
 
-  float left = (float) ((1920.0f / 2.0f) * -1.0f);
+  float left = (float) ((renderWidth / 2.0f) * -1.0f);
 
   // Calculate the screen coordinates of the right side of the window.
-  float right = left + (float) 1920.0f;
+  float right = left + (float) renderWidth;
 
   // Calculate the screen coordinates of the top of the window.
-  float top = (float) (1080.0f / 2);
+  float top = (float) (renderHeight / 2);
 
   // Calculate the screen coordinates of the bottom of the window.
-  float bottom = top - (float) 1080.0f;
+  float bottom = top - (float) renderHeight;
 
   SimpleVertex quadVertices[] = 
   {
@@ -853,7 +758,7 @@ HRESULT Application::InitVertexBuffer() {
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = quadVertices;
 
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &fullScreenVertexBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, &InitData, &fullScreenVertexBuffer);
 
   if (FAILED(hr))
     return hr;
@@ -877,13 +782,13 @@ HRESULT Application::initTerrainVertexBuffer() {
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = planeVertices;
 
-  HRESULT hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneVertexBuffer);
+  HRESULT hr = d3dDevice->CreateBuffer(&bd, &InitData, &planeVertexBuffer);
 
   if (FAILED(hr))
     return hr;
 }
 
-HRESULT Application::InitIndexBuffer() {
+HRESULT Application::initIndexBuffer() {
   HRESULT hr;
 
   // Create index buffer
@@ -919,42 +824,10 @@ HRESULT Application::InitIndexBuffer() {
   D3D11_SUBRESOURCE_DATA InitData;
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = indices;
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pIndexBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, &InitData, &indexBuffer);
 
   if (FAILED(hr))
     return hr;
-
-  // Create plane index buffer
-//  const UINT* planeIndices = terrain->getIndices();
-//
-//  ZeroMemory(&bd, sizeof(bd));
-//  bd.Usage = D3D11_USAGE_DEFAULT;
-//  bd.ByteWidth = sizeof(UINT) * terrain->getNumIndices();
-//  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-//  bd.CPUAccessFlags = 0;
-//
-//  ZeroMemory(&InitData, sizeof(InitData));
-//  InitData.pSysMem = planeIndices;
-//  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneIndexBuffer);
-//
-//  if (FAILED(hr))
-//    return hr;
-//
-//  // Create plane index buffer
-//  planeIndices = ocean->getIndices();
-//
-//  ZeroMemory(&bd, sizeof(bd));
-//  bd.Usage = D3D11_USAGE_DEFAULT;
-//  bd.ByteWidth = sizeof(UINT) * ocean->getNumIndices();
-//  bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-//  bd.CPUAccessFlags = 0;
-//
-//  ZeroMemory(&InitData, sizeof(InitData));
-//  InitData.pSysMem = planeIndices;
-////  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pOceanPlaneIndexBuffer);
-//
-//  if (FAILED(hr))
-//    return hr;
 
   UINT quadIndices[] =
   {
@@ -970,7 +843,7 @@ HRESULT Application::InitIndexBuffer() {
 
   ZeroMemory(&InitData, sizeof(InitData));
   InitData.pSysMem = quadIndices;
-  hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &fullScreenIndexBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, &InitData, &fullScreenIndexBuffer);
 
   if (FAILED(hr))
     return hr;
@@ -978,7 +851,7 @@ HRESULT Application::InitIndexBuffer() {
   return S_OK;
 }
 
-HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow) {
+HRESULT Application::initWindow(HINSTANCE hInstance, int nCmdShow) {
   // Register class
   WNDCLASSEX wcex;
   wcex.cbSize = sizeof(WNDCLASSEX);
@@ -997,21 +870,21 @@ HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow) {
     return E_FAIL;
 
   // Create window
-  _hInst = hInstance;
+  hInst = hInstance;
   RECT rc = { 0, 0, 960, 540 };
   AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-  _hWnd = CreateWindow(L"TutorialWindowClass", L"FGGC Semester 2 Framework", WS_OVERLAPPEDWINDOW,
+  hWnd = CreateWindow(L"TutorialWindowClass", L"FGGC Semester 2 Framework", WS_OVERLAPPEDWINDOW,
     CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
     nullptr);
-  if (!_hWnd)
+  if (!hWnd)
     return E_FAIL;
 
-  ShowWindow(_hWnd, nCmdShow);
+  ShowWindow(hWnd, nCmdShow);
 
   return S_OK;
 }
 
-HRESULT Application::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
+HRESULT Application::compileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut) {
   HRESULT hr = S_OK;
 
   DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -1041,7 +914,7 @@ HRESULT Application::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoin
   return S_OK;
 }
 
-HRESULT Application::InitDevice() {
+HRESULT Application::initDevice() {
   HRESULT hr = S_OK;
 
   UINT createDeviceFlags = 0;
@@ -1073,21 +946,21 @@ HRESULT Application::InitDevice() {
   DXGI_SWAP_CHAIN_DESC sd;
   ZeroMemory(&sd, sizeof(sd));
   sd.BufferCount = 1;
-  sd.BufferDesc.Width = _renderWidth;
-  sd.BufferDesc.Height = _renderHeight;
+  sd.BufferDesc.Width = renderWidth;
+  sd.BufferDesc.Height = renderHeight;
   sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
   sd.BufferDesc.RefreshRate.Numerator = 60;
   sd.BufferDesc.RefreshRate.Denominator = 1;
   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-  sd.OutputWindow = _hWnd;
+  sd.OutputWindow = hWnd;
   sd.SampleDesc.Count = sampleCount;
   sd.SampleDesc.Quality = 0;
   sd.Windowed = TRUE;
 
   for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
-    _driverType = driverTypes[driverTypeIndex];
-    hr = D3D11CreateDeviceAndSwapChain(nullptr, _driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
-      D3D11_SDK_VERSION, &sd, &_pSwapChain, &_pd3dDevice, &_featureLevel, &_pImmediateContext);
+    driverType = driverTypes[driverTypeIndex];
+    hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels,
+      D3D11_SDK_VERSION, &sd, &swapChain, &d3dDevice, &featureLevel, &immediateContext);
     if (SUCCEEDED(hr))
       break;
   }
@@ -1097,12 +970,12 @@ HRESULT Application::InitDevice() {
 
   // Create a render target view
   ID3D11Texture2D* pBackBuffer = nullptr;
-  hr = _pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*) &pBackBuffer);
+  hr = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*) &pBackBuffer);
 
   if (FAILED(hr))
     return hr;
 
-  hr = _pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &_pRenderTargetView);
+  hr = d3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &renderTargetView);
   pBackBuffer->Release();
 
   if (FAILED(hr))
@@ -1115,8 +988,8 @@ HRESULT Application::InitDevice() {
   D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
 
   ZeroMemory(&textureDesc, sizeof(textureDesc));
-  textureDesc.Width = _renderWidth;
-  textureDesc.Height = _renderHeight;
+  textureDesc.Width = renderWidth;
+  textureDesc.Height = renderHeight;
   textureDesc.MipLevels = 1;
   textureDesc.ArraySize = 1;
   textureDesc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
@@ -1127,7 +1000,7 @@ HRESULT Application::InitDevice() {
   textureDesc.MiscFlags = 0;
 
   for (int i = 0; i < DEFERRED_BUFFERS; i++) {
-    hr = _pd3dDevice->CreateTexture2D(&textureDesc, NULL, &deferredTextures[i]);
+    hr = d3dDevice->CreateTexture2D(&textureDesc, NULL, &deferredTextures[i]);
     if (FAILED(hr)) {
       return hr;
     }
@@ -1140,7 +1013,7 @@ HRESULT Application::InitDevice() {
 
   // Create the render target views.
   for (int i = 0; i < DEFERRED_BUFFERS; i++) {
-    hr = _pd3dDevice->CreateRenderTargetView(deferredTextures[i], &renderTargetViewDesc, &deferredRenderTargets[i]);
+    hr = d3dDevice->CreateRenderTargetView(deferredTextures[i], &renderTargetViewDesc, &deferredRenderTargets[i]);
     if (FAILED(hr)) {
       return hr;
     }
@@ -1154,20 +1027,20 @@ HRESULT Application::InitDevice() {
 
   // Create the shader resource views.
   for (int i = 0; i < DEFERRED_BUFFERS; i++) {
-    hr = _pd3dDevice->CreateShaderResourceView(deferredTextures[i], &shaderResourceViewDesc, &deferredResourceViews[i]);
+    hr = d3dDevice->CreateShaderResourceView(deferredTextures[i], &shaderResourceViewDesc, &deferredResourceViews[i]);
     if (FAILED(hr)) {
       return false;
     }
   }
 
   // Setup the viewport
-  vp.Width = (FLOAT) _renderWidth;
-  vp.Height = (FLOAT) _renderHeight;
+  vp.Width = (FLOAT) renderWidth;
+  vp.Height = (FLOAT) renderHeight;
   vp.MinDepth = 0.0f;
   vp.MaxDepth = 1.0f;
   vp.TopLeftX = 0;
   vp.TopLeftY = 0;
-  _pImmediateContext->RSSetViewports(1, &vp);
+  immediateContext->RSSetViewports(1, &vp);
 
   lightVP.Width = 8096.0f;
   lightVP.Height = 8096.0f;
@@ -1176,14 +1049,14 @@ HRESULT Application::InitDevice() {
   lightVP.TopLeftX = 0;
   lightVP.TopLeftY = 0;
 
-  InitShadersAndInputLayout();
+  initShadersAndInputLayout();
 
-  InitVertexBuffer();
-  InitIndexBuffer();
+  initVertexBuffer();
+  initIndexBuffer();
 
   // Set primitive topology
   //_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+  immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
   // Create the constant buffer
   D3D11_BUFFER_DESC bd;
@@ -1192,15 +1065,15 @@ HRESULT Application::InitDevice() {
   bd.ByteWidth = sizeof(ConstantBuffer);
   bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
   bd.CPUAccessFlags = 0;
-  hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pConstantBuffer);
+  hr = d3dDevice->CreateBuffer(&bd, nullptr, &constantBuffer);
 
   if (FAILED(hr))
     return hr;
 
   D3D11_TEXTURE2D_DESC depthStencilDesc;
 
-  depthStencilDesc.Width = _renderWidth;
-  depthStencilDesc.Height = _renderHeight;
+  depthStencilDesc.Width = renderWidth;
+  depthStencilDesc.Height = renderHeight;
   depthStencilDesc.MipLevels = 1;
   depthStencilDesc.ArraySize = 1;
   depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -1211,10 +1084,10 @@ HRESULT Application::InitDevice() {
   depthStencilDesc.CPUAccessFlags = 0;
   depthStencilDesc.MiscFlags = 0;
 
-  _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
-  _pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
+  d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &depthStencilBuffer);
+  d3dDevice->CreateDepthStencilView(depthStencilBuffer, nullptr, &depthStencilView);
 
-  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+  immediateContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 
   depthStencilDesc.Width = 8096;
   depthStencilDesc.Height = 8096;
@@ -1222,7 +1095,7 @@ HRESULT Application::InitDevice() {
   depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 
   ID3D11Texture2D* lightTex;
-  hr = _pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &lightTex);
+  hr = d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &lightTex);
 
   if (FAILED(hr)) {
     return hr;
@@ -1234,7 +1107,7 @@ HRESULT Application::InitDevice() {
   viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
   viewDesc.Texture2D.MipSlice = 0;
 
-  hr = _pd3dDevice->CreateDepthStencilView(lightTex, &viewDesc, &lightDepthBuffer);
+  hr = d3dDevice->CreateDepthStencilView(lightTex, &viewDesc, &lightDepthBuffer);
 
   if (FAILED(hr)) {
     return hr;
@@ -1246,7 +1119,7 @@ HRESULT Application::InitDevice() {
   rViewDesc.Texture2D.MipLevels = depthStencilDesc.MipLevels;
   rViewDesc.Texture2D.MostDetailedMip = 0;
 
-  hr = _pd3dDevice->CreateShaderResourceView(lightTex, &rViewDesc, &lightDepthView);
+  hr = d3dDevice->CreateShaderResourceView(lightTex, &rViewDesc, &lightDepthView);
 
   if (FAILED(hr)) {
     return hr;
@@ -1260,12 +1133,12 @@ HRESULT Application::InitDevice() {
   ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
   cmdesc.FillMode = D3D11_FILL_SOLID;
   cmdesc.CullMode = D3D11_CULL_NONE;
-  hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCullNone);
+  hr = d3dDevice->CreateRasterizerState(&cmdesc, &rsCullNone);
 
   ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
   cmdesc.FillMode = D3D11_FILL_WIREFRAME;
   cmdesc.CullMode = D3D11_CULL_NONE;
-  hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCullNoneWireFrame);
+  hr = d3dDevice->CreateRasterizerState(&cmdesc, &rsCullNoneWireFrame);
 
   D3D11_DEPTH_STENCIL_DESC dssDesc;
   ZeroMemory(&dssDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -1273,7 +1146,7 @@ HRESULT Application::InitDevice() {
   dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
   dssDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 
-  _pd3dDevice->CreateDepthStencilState(&dssDesc, &DSLessEqual);
+  d3dDevice->CreateDepthStencilState(&dssDesc, &dsLessEqual);
 
   // Blending 
 
@@ -1295,7 +1168,7 @@ HRESULT Application::InitDevice() {
   blendDesc.AlphaToCoverageEnable = false;
   blendDesc.RenderTarget[0] = rtbd;
 
-  _pd3dDevice->CreateBlendState(&blendDesc, &Transparency);
+  d3dDevice->CreateBlendState(&blendDesc, &transparency);
 
   ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
 
@@ -1303,65 +1176,87 @@ HRESULT Application::InitDevice() {
   cmdesc.CullMode = D3D11_CULL_BACK;
 
   cmdesc.FrontCounterClockwise = true;
-  hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &CCWcullMode);
+  hr = d3dDevice->CreateRasterizerState(&cmdesc, &ccwCullMode);
 
   cmdesc.FrontCounterClockwise = false;
-  hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &CWcullMode);
+  hr = d3dDevice->CreateRasterizerState(&cmdesc, &cwCullMode);
 
-  _pImmediateContext->RSSetState(CWcullMode);
+  immediateContext->RSSetState(cwCullMode);
 
   cmdesc.FillMode = D3D11_FILL_WIREFRAME;
   cmdesc.CullMode = D3D11_CULL_NONE;
-  hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &wireframe);
+  hr = d3dDevice->CreateRasterizerState(&cmdesc, &wireframe);
 
   return S_OK;
 }
 
-void Application::Cleanup() {
-  if (_pImmediateContext) _pImmediateContext->ClearState();
-  if (_pSamplerLinear) _pSamplerLinear->Release();
+void Application::cleanup() {
+  if (immediateContext) immediateContext->ClearState();
+  if (samplerAnistropic) samplerAnistropic->Release();
+  if (shadowSampler) shadowSampler->Release();
 
-  if (_pTextureRV) _pTextureRV->Release();
+  if (textureRV) textureRV->Release();
+  if (terrainTextureRV1) terrainTextureRV1->Release();
+  if (terrainTextureRV2) terrainTextureRV2->Release();
+  if (terrainTextureRV3) terrainTextureRV3->Release();
+  if (terrainTextureRV4) terrainTextureRV4->Release();
+  if (lightDepthView) lightDepthView->Release();
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    deferredResourceViews[i]->Release();
+  }
 
-  if (_pConstantBuffer) _pConstantBuffer->Release();
+  if (constantBuffer) constantBuffer->Release();
 
-  if (_pVertexBuffer) _pVertexBuffer->Release();
-  if (_pIndexBuffer) _pIndexBuffer->Release();
-  //if (_pPlaneVertexBuffer) _pPlaneVertexBuffer->Release();
-  //if (_pPlaneIndexBuffer) _pPlaneIndexBuffer->Release();
+  if (vertexBuffer) vertexBuffer->Release();
+  if (indexBuffer) indexBuffer->Release();
+  if (planeVertexBuffer) planeVertexBuffer->Release();
+  if (skeletonVertexBuffer) skeletonVertexBuffer->Release();
+  if (fullScreenVertexBuffer) fullScreenVertexBuffer->Release();
+  if (fullScreenIndexBuffer) fullScreenIndexBuffer->Release();
 
-  if (_pVertexLayout) _pVertexLayout->Release();
-  if (_pVertexShader) _pVertexShader->Release();
+  if (vertexLayout) vertexLayout->Release();
+  if (instanceLayout) instanceLayout->Release();
+  if (vertexShader) vertexShader->Release();
+  if (instanceVertexShader) instanceVertexShader->Release();
   if (controlPointHullShader) controlPointHullShader->Release();
   if (domainShader) domainShader->Release();
   if (shadowPixelShader) shadowPixelShader->Release();
-  if (_pRenderTargetView) _pRenderTargetView->Release();
-  if (_pSwapChain) _pSwapChain->Release();
-  if (_pImmediateContext) _pImmediateContext->Release();
-  if (_pd3dDevice) _pd3dDevice->Release();
-  if (_depthStencilView) _depthStencilView->Release();
-  if (_depthStencilBuffer) _depthStencilBuffer->Release();
+  if (shadowTerrainPixelShader) shadowTerrainPixelShader->Release();
+  if (deferredPixelShader) deferredPixelShader->Release();
+  if (deferredTerrainPixelShader) deferredTerrainPixelShader->Release();
+  if (lightingPixelShader) lightingPixelShader->Release();
+  if (renderTargetView) renderTargetView->Release();
+  for (int i = 0; i < DEFERRED_BUFFERS; i++) {
+    deferredRenderTargets[i]->Release();
+  }
+  if (swapChain) swapChain->Release();
+  if (immediateContext) immediateContext->Release();
+  if (d3dDevice) d3dDevice->Release();
+  if (depthStencilView) depthStencilView->Release();
+  if (lightDepthView) lightDepthView->Release();
+  if (depthStencilBuffer) depthStencilBuffer->Release();
+  if (lightDepthBuffer) lightDepthBuffer->Release();
 
-  if (DSLessEqual) DSLessEqual->Release();
-  if (RSCullNone) RSCullNone->Release();
+  if (dsLessEqual) dsLessEqual->Release();
+  if (rsCullNone) rsCullNone->Release();
+  if (rsCullNoneWireFrame) rsCullNoneWireFrame->Release();
 
-  if (Transparency) Transparency->Release();
-  if (CCWcullMode) CCWcullMode->Release();
-  if (CWcullMode) CWcullMode->Release();
+  if (transparency) transparency->Release();
+  if (ccwCullMode) ccwCullMode->Release();
+  if (cwCullMode) cwCullMode->Release();
+  if (wireframe) wireframe->Release();
 
   for (auto camera : cameras) {
     delete camera;
   }
-
-  for (auto gameObject : _gameObjects) {
-    if (gameObject) {
-      delete gameObject;
-      gameObject = nullptr;
-    }
+  for (auto bone : bones) {
+    delete bone;
   }
+  delete skeleton;
+  delete terrain;
 }
 
-void Application::Update() {
+void Application::update() {
   // Update our time
   static float t = 0.0f;
 
@@ -1378,32 +1273,22 @@ void Application::Update() {
   timeSinceStart = (dwTimeCur - dwTimeStart) / 1000.0f;
 
   // Update camera
-
-  //float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
-
-  //float x = _cameraOrbitRadius * cos(angleAroundZ);
-  //float z = _cameraOrbitRadius * sin(angleAroundZ);
-
-  //XMFLOAT3 cameraPos = cameras[selectedCamera]->GetPosition();
-  //cameraPos.x = x;
-  //cameraPos.z = z;
-
-  //cameras[selectedCamera]->SetPosition(cameraPos);
-  cameras[selectedCamera]->Update();
+  cameras[selectedCamera]->update();
 
   if (!deferredPipeline) {
     XMVECTOR toLight = XMLoadFloat3(&XMFLOAT3(-0.57735f, 0.57735f, -0.57735f));
     toLight = XMVector3Transform(toLight, XMMatrixRotationY(t));
-    XMStoreFloat3(&basicLight.LightVecW, toLight);
+    XMStoreFloat3(&basicLight.lightVecW, toLight);
   }
   else {
-    basicLight.LightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
+    basicLight.lightVecW = XMFLOAT3(-0.57735f, 0.57735f, -0.57735f);
   }
 
   // Update objects
 
-  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
-  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
+  // extract frustum planes
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->getView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getProjection();
 
   XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
   XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
@@ -1432,42 +1317,35 @@ void Application::Update() {
   planes[4] = nearPlane;
   planes[5] = farPlane;
 
-  terrain->setCameraPosition(cameras[selectedCamera]->GetPosition());
+  terrain->setCameraPosition(cameras[selectedCamera]->getPosition());
   terrain->frustumCull(planes);
-  terrain->Update(timeSinceStart);
-  //for (auto chunk : chunks) {
-  //  chunk->Update(timeSinceStart);
-  //}
-  for (auto gameObject : _gameObjects) {
-    gameObject->Update(timeSinceStart);
-  }
+  terrain->update(timeSinceStart);
+
   for (auto gameObject : bones) {
-    gameObject->Update(timeSinceStart);
+    gameObject->update(timeSinceStart);
   }
 
-  //if (bone1->GetPosition().z < 150.0f) {
-  //  XMFLOAT3 pos = bone1->GetPosition();
-  //  bone1->SetPosition(pos.x, terrain->getCameraHeight(pos.x, pos.z + 0.01f) + 13.5f, pos.z + 0.01f);
-  //}
-
-  //skeleton->runAnimation(animation);
   skeleton->walk();
   skeleton->update(t);
 }
 
+// renders the scene from the light's perspective to create the shadow map
 void Application::shadowPass(ConstantBuffer& cb) {
+  // unbind depth map from pixel shader, since we're now writing to it
   ID3D11ShaderResourceView* nullView = nullptr;
-  _pImmediateContext->PSSetShaderResources(4, 1, &nullView);
-  _pImmediateContext->OMSetRenderTargets(1, &null, lightDepthBuffer);
-  _pImmediateContext->RSSetViewports(1, &lightVP);
-  _pImmediateContext->ClearDepthStencilView(lightDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
+  immediateContext->PSSetShaderResources(4, 1, &nullView);
+  // depth only writing
+  immediateContext->OMSetRenderTargets(1, &null, lightDepthBuffer);
+  immediateContext->RSSetViewports(1, &lightVP);
+  immediateContext->ClearDepthStencilView(lightDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+  // taken from Frank Luna 3D Game Programming with DirectX 11
   sphere bounds;
   bounds.centre = XMFLOAT3(0.0f, 0.0f, 0.0f);
   float halfWidth = TERRAIN_WIDTH / 2.0f;
   bounds.radius = sqrtf(halfWidth * halfWidth + halfWidth * halfWidth);
 
-  XMVECTOR lightDir = XMLoadFloat3(&basicLight.LightVecW);
+  XMVECTOR lightDir = XMLoadFloat3(&basicLight.lightVecW);
   XMVECTOR lightPos = 2.0f * bounds.radius * lightDir;
   XMVECTOR targetPos = XMLoadFloat3(&bounds.centre);
   XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
@@ -1489,405 +1367,253 @@ void Application::shadowPass(ConstantBuffer& cb) {
   XMMATRIX t1(0.5f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.0f, 1.0f);
   XMMATRIX s = V * P * t1;
 
-  cb.View = XMMatrixTranspose(V);
-  cb.Projection = XMMatrixTranspose(P);
+  cb.view = XMMatrixTranspose(V);
+  cb.projection = XMMatrixTranspose(P);
+  // projective texturing matrix
   cb.shadowTransform = XMMatrixTranspose(s);
 
-  _pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+  // depth only rendering, so no need for a pixel shader
+  immediateContext->PSSetShader(nullptr, nullptr, 0);
 
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
-  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
-
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-
-  for (auto chunk : chunks) {
-    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
-
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-
-  // Render all scene objects
-  for (int i = 0; i < _gameObjects.size(); i++) {
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
-
-    // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-
-    // Draw object
-    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
+  immediateContext->IASetInputLayout(vertexLayout);
+  cb.world = XMMatrixTranspose(terrain->getWorldMatrix());
+  immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
+  terrain->draw(cb, constantBuffer, immediateContext);
 
   for (int i = 0; i < bones.size(); i++) {
-    // Get render material
-    //material = _gameObjects[i]->GetMaterial();
-
-    //// Copy material to shader
-    //cb.surface.AmbientMtrl = material.ambient;
-    //cb.surface.DiffuseMtrl = material.diffuse;
-    //cb.surface.SpecularMtrl = material.specular;
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
-
-    // Set texture
-    //if (_gameObjects[i]->HasTexture()) {
-    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
-    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-    //  cb.HasTexture = 1.0f;
-    //}
-    //else {
-    cb.HasTexture = 0.0f;
-    //}
+    cb.world = XMMatrixTranspose(bones[i]->getWorldMatrix());
+    cb.hasTexture = 0.0f;
 
     // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+    immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
 
     // Draw object
-    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+    bones[i]->draw(cb, constantBuffer, immediateContext);
   }
 
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-  skeleton->draw(cb, _pConstantBuffer);
+  immediateContext->IASetInputLayout(instanceLayout);
+  immediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, constantBuffer);
 }
 
+// deferred rendering pass
 void Application::renderToTextures(ConstantBuffer& cb) {
+  // unbind G-buffers from pixel shader as we're now writing to them
   ID3D11ShaderResourceView* nullView = nullptr;
-  _pImmediateContext->PSSetShaderResources(0, 1, &nullView);
-  _pImmediateContext->PSSetShaderResources(1, 1, &nullView);
-  _pImmediateContext->OMSetRenderTargets(DEFERRED_BUFFERS, deferredRenderTargets, _depthStencilView);
+  immediateContext->PSSetShaderResources(0, 1, &nullView);
+  immediateContext->PSSetShaderResources(1, 1, &nullView);
+  immediateContext->OMSetRenderTargets(DEFERRED_BUFFERS, deferredRenderTargets, depthStencilView);
   float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
 
   for (int i = 0; i < DEFERRED_BUFFERS; i++) {
-    _pImmediateContext->ClearRenderTargetView(deferredRenderTargets[i], ClearColor);
+    immediateContext->ClearRenderTargetView(deferredRenderTargets[i], ClearColor);
   }
-  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+  immediateContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-  if (_wireFrame) {
-    _pImmediateContext->RSSetState(wireframe);
+  if (wireFrame) {
+    immediateContext->RSSetState(wireframe);
   }
   else {
-    _pImmediateContext->RSSetState(CWcullMode);
+    immediateContext->RSSetState(cwCullMode);
   }
 
-  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
-  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->getView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getProjection();
 
   XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
   XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
 
-  cb.View = XMMatrixTranspose(view);
-  cb.Projection = XMMatrixTranspose(projection);
+  cb.view = XMMatrixTranspose(view);
+  cb.projection = XMMatrixTranspose(projection);
 
   // Get render material
-  Material material = terrain->GetMaterial();
+  Material material = terrain->getMaterial();
 
   // Copy material to shader
-  cb.surface.AmbientMtrl = material.ambient;
-  cb.surface.DiffuseMtrl = material.diffuse;
-  cb.surface.SpecularMtrl = material.specular;
+  cb.surface.ambientMtrl = material.ambient;
+  cb.surface.diffuseMtrl = material.diffuse;
+  cb.surface.specularMtrl = material.specular;
 
   // Set world matrix
-  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
-  cb.HasTexture = 1.0f;
-  _pImmediateContext->PSSetShader(deferredTerrainPixelShader, nullptr, 0);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
+  cb.world = XMMatrixTranspose(terrain->getWorldMatrix());
+  cb.hasTexture = 1.0f;
+  immediateContext->PSSetShader(deferredTerrainPixelShader, nullptr, 0);
+  immediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
+  immediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  immediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
+  immediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
 
   // Update constant buffer
-  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+  immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
 
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
+  immediateContext->IASetInputLayout(vertexLayout);
 
   // Draw object
-  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  terrain->draw(cb, constantBuffer, immediateContext);
 
-  _pImmediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-
-  for (auto chunk : chunks) {
-    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
-
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-
-  // Render all scene objects
-  for (int i = 0; i < _gameObjects.size(); i++) {
-    // Get render material
-    //material = _gameObjects[i]->GetMaterial();
-
-    //// Copy material to shader
-    //cb.surface.AmbientMtrl = material.ambient;
-    //cb.surface.DiffuseMtrl = material.diffuse;
-    //cb.surface.SpecularMtrl = material.specular;
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
-
-    // Set texture
-    if (_gameObjects[i]->HasTexture()) {
-      ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
-      _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-      cb.HasTexture = 1.0f;
-    }
-    else {
-      cb.HasTexture = 0.0f;
-    }
-
-    // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-
-    // Draw object
-    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
+  immediateContext->PSSetShader(deferredPixelShader, nullptr, 0);
 
   for (int i = 0; i < bones.size(); i++) {
-    // Get render material
-    //material = _gameObjects[i]->GetMaterial();
-
-    //// Copy material to shader
-    //cb.surface.AmbientMtrl = material.ambient;
-    //cb.surface.DiffuseMtrl = material.diffuse;
-    //cb.surface.SpecularMtrl = material.specular;
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
-
-    // Set texture
-    //if (_gameObjects[i]->HasTexture()) {
-    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
-    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-    //  cb.HasTexture = 1.0f;
-    //}
-    //else {
-    cb.HasTexture = 0.0f;
-    //}
+    cb.world = XMMatrixTranspose(bones[i]->getWorldMatrix());
+    cb.hasTexture = 0.0f;
 
     // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+    immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
 
     // Draw object
-    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+    bones[i]->draw(cb, constantBuffer, immediateContext);
   }
 
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-  skeleton->draw(cb, _pConstantBuffer);
+  immediateContext->IASetInputLayout(instanceLayout);
+  immediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, constantBuffer);
 }
 
 void Application::shadowMapping() {
   ConstantBuffer cb;
 
-  _pImmediateContext->RSSetState(CWcullMode);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  //_pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
-  //_pImmediateContext->DSSetShader(domainShader, nullptr, 0);
-  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
-  _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  immediateContext->RSSetState(cwCullMode);
+  immediateContext->VSSetShader(vertexShader, nullptr, 0);
+  immediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  immediateContext->DSSetShader(domainShader, nullptr, 0);
+  immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->HSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->DSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->PSSetSamplers(0, 1, &samplerAnistropic);
+  immediateContext->PSSetSamplers(1, 1, &shadowSampler);
+  immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
   cb.light = basicLight;
-  cb.EyePosW = cameras[selectedCamera]->GetPosition();
-  cb.gMaxTessFactor = 1.0f;
-  cb.gMinTessFactor = 1.0f;
-  cb.gMaxTessDistance = 1.0f;
-  cb.gMinTessDistance = 10.0f;
+  cb.eyePosW = cameras[selectedCamera]->getPosition();
+  cb.maxTessFactor = 1.0f;
+  cb.minTessFactor = 1.0f;
+  cb.maxTessDistance = 1.0f;
+  cb.minTessDistance = 10.0f;
 
+  // first create the shadow map
   shadowPass(cb);
 
-  if (_wireFrame) {
-    _pImmediateContext->RSSetState(wireframe);
+  if (wireFrame) {
+    immediateContext->RSSetState(wireframe);
   }
   else {
-    _pImmediateContext->RSSetState(CWcullMode);
+    immediateContext->RSSetState(cwCullMode);
   }
 
-  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView); 
-  _pImmediateContext->RSSetViewports(1, &vp);
-  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-  _pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-  _pImmediateContext->PSSetShaderResources(4, 1, &lightDepthView);
+  immediateContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView); 
+  immediateContext->RSSetViewports(1, &vp);
+  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+  immediateContext->ClearRenderTargetView(renderTargetView, ClearColor);
+  immediateContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+  // bind the shadow map as input to the pixel shader
+  immediateContext->PSSetShaderResources(4, 1, &lightDepthView);
 
-  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetView();
-  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->GetProjection();
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->getView();
+  XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getProjection();
 
   XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
   XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
 
-  cb.View = XMMatrixTranspose(view);
-  cb.Projection = XMMatrixTranspose(projection);
+  cb.view = XMMatrixTranspose(view);
+  cb.projection = XMMatrixTranspose(projection);
 
-  Material material = terrain->GetMaterial();
-  cb.surface.AmbientMtrl = material.ambient;
-  cb.surface.DiffuseMtrl = material.diffuse;
-  cb.surface.SpecularMtrl = material.specular;
-  cb.World = XMMatrixTranspose(terrain->GetWorldMatrix());
-  cb.HasTexture = 1.0f;
-  _pImmediateContext->PSSetShader(shadowTerrainPixelShader, nullptr, 0);
-  _pImmediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
-  _pImmediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
-  _pImmediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
-  _pImmediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
-  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+  Material material = terrain->getMaterial();
+  cb.surface.ambientMtrl = material.ambient;
+  cb.surface.diffuseMtrl = material.diffuse;
+  cb.surface.specularMtrl = material.specular;
+  cb.world = XMMatrixTranspose(terrain->getWorldMatrix());
+  cb.hasTexture = 1.0f;
+  immediateContext->PSSetShader(shadowTerrainPixelShader, nullptr, 0);
+  immediateContext->PSSetShaderResources(3, 1, &terrainTextureRV1);
+  immediateContext->PSSetShaderResources(2, 1, &terrainTextureRV2);
+  immediateContext->PSSetShaderResources(1, 1, &terrainTextureRV3);
+  immediateContext->PSSetShaderResources(0, 1, &terrainTextureRV4);
+  immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
+  immediateContext->IASetInputLayout(vertexLayout);
+  immediateContext->VSSetShader(vertexShader, nullptr, 0);
 
   // Draw object
-  terrain->Draw(cb, _pConstantBuffer, _pImmediateContext);
+  terrain->draw(cb, constantBuffer, immediateContext);
 
-  _pImmediateContext->PSSetShader(shadowPixelShader, nullptr, 0);
-
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-
-  for (auto chunk : chunks) {
-    chunk->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
-
-  _pImmediateContext->IASetInputLayout(_pVertexLayout);
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-
-  // Render all scene objects
-  for (int i = 0; i < _gameObjects.size(); i++) {
-    // Get render material
-    material = _gameObjects[i]->GetMaterial();
-
-    // Copy material to shader
-    cb.surface.AmbientMtrl = material.ambient;
-    cb.surface.DiffuseMtrl = material.diffuse;
-    cb.surface.SpecularMtrl = material.specular;
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(_gameObjects[i]->GetWorldMatrix());
-
-    // Set texture
-    if (_gameObjects[i]->HasTexture()) {
-      ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
-      _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-      cb.HasTexture = 1.0f;
-    }
-    else {
-      cb.HasTexture = 0.0f;
-    }
-
-    // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-
-    // Draw object
-    _gameObjects[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
-  }
+  immediateContext->PSSetShader(shadowPixelShader, nullptr, 0);
 
   for (int i = 0; i < bones.size(); i++) {
-    // Get render material
-    //material = _gameObjects[i]->GetMaterial();
-
-    //// Copy material to shader
-    //cb.surface.AmbientMtrl = material.ambient;
-    //cb.surface.DiffuseMtrl = material.diffuse;
-    //cb.surface.SpecularMtrl = material.specular;
-
-    // Set world matrix
-    cb.World = XMMatrixTranspose(bones[i]->GetWorldMatrix());
-
-    // Set texture
-    //if (_gameObjects[i]->HasTexture()) {
-    //  ID3D11ShaderResourceView * textureRV = _gameObjects[i]->GetTextureRV();
-    //  _pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-    //  cb.HasTexture = 1.0f;
-    //}
-    //else {
-    cb.HasTexture = 0.0f;
-    //}
+    cb.world = XMMatrixTranspose(bones[i]->getWorldMatrix());
+    cb.hasTexture = 0.0f;
 
     // Update constant buffer
-    _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+    immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
 
     // Draw object
-    bones[i]->Draw(cb, _pConstantBuffer, _pImmediateContext);
+    bones[i]->draw(cb, constantBuffer, immediateContext);
   }
 
-  _pImmediateContext->IASetInputLayout(instanceLayout);
-  _pImmediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
-  skeleton->draw(cb, _pConstantBuffer);
+  immediateContext->IASetInputLayout(instanceLayout);
+  immediateContext->VSSetShader(instanceVertexShader, nullptr, 0);
+  skeleton->draw(cb, constantBuffer);
 }
 
 void Application::deferredRendering() {
   ConstantBuffer cb;
 
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  _pImmediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
-  _pImmediateContext->DSSetShader(domainShader, nullptr, 0);
-  _pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
-  _pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
-  _pImmediateContext->PSSetSamplers(1, 1, &shadowSampler);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+  immediateContext->VSSetShader(vertexShader, nullptr, 0);
+  immediateContext->HSSetShader(controlPointHullShader, nullptr, 0);
+  immediateContext->DSSetShader(domainShader, nullptr, 0);
+  immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->HSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->DSSetConstantBuffers(0, 1, &constantBuffer);
+  immediateContext->PSSetSamplers(0, 1, &samplerAnistropic);
+  immediateContext->PSSetSamplers(1, 1, &shadowSampler);
+  immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
   cb.light = basicLight;
-  cb.EyePosW = cameras[selectedCamera]->GetPosition();
-  cb.gMaxTessFactor = 1.0f;
-  cb.gMinTessFactor = 1.0f;
-  cb.gMaxTessDistance = 1.0f;
-  cb.gMinTessDistance = 10.0f;
+  cb.eyePosW = cameras[selectedCamera]->getPosition();
+  cb.maxTessFactor = 1.0f;
+  cb.minTessFactor = 1.0f;
+  cb.maxTessDistance = 1.0f;
+  cb.minTessDistance = 10.0f;
 
+  // render to G-buffers
   renderToTextures(cb);
 
-  _pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-  _pImmediateContext->HSSetShader(nullptr, nullptr, 0);
-  _pImmediateContext->DSSetShader(nullptr, nullptr, 0);
-  _pImmediateContext->PSSetShader(lightingPixelShader, nullptr, 0);
+  immediateContext->VSSetShader(vertexShader, nullptr, 0);
+  immediateContext->HSSetShader(nullptr, nullptr, 0);
+  immediateContext->DSSetShader(nullptr, nullptr, 0);
+  immediateContext->PSSetShader(lightingPixelShader, nullptr, 0);
 
-  _pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
-  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-  _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-  _pImmediateContext->RSSetState(CWcullMode);
-  _pImmediateContext->PSSetShaderResources(0, 1, &deferredResourceViews[0]);
-  _pImmediateContext->PSSetShaderResources(1, 1, &deferredResourceViews[1]);
-  _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  immediateContext->OMSetRenderTargets(1, &renderTargetView, nullptr);
+  float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+  immediateContext->ClearRenderTargetView(renderTargetView, ClearColor);
+  immediateContext->RSSetState(cwCullMode);
+  // bind G-buffers as input to the pixel shader
+  immediateContext->PSSetShaderResources(0, 1, &deferredResourceViews[0]);
+  immediateContext->PSSetShaderResources(1, 1, &deferredResourceViews[1]);
+  immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->GetBasicView();
+  XMFLOAT4X4 viewAsFloats = cameras[selectedCamera]->getBasicView();
   XMFLOAT4X4 projectionAsFloats = cameras[selectedCamera]->getOrthoProjection();
 
   XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
   XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
   XMMATRIX world = XMMatrixIdentity();
 
-  cb.World = XMMatrixTranspose(world);
-  cb.View = XMMatrixTranspose(view);
-  cb.Projection = XMMatrixTranspose(projection);
-  _pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+  cb.world = XMMatrixTranspose(world);
+  cb.view = XMMatrixTranspose(view);
+  cb.projection = XMMatrixTranspose(projection);
+  immediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
 
   UINT stride = sizeof(SimpleVertex);
   UINT offset = 0;
 
-  _pImmediateContext->IASetVertexBuffers(0, 1, &fullScreenVertexBuffer, &stride, &offset);
-  _pImmediateContext->IASetIndexBuffer(fullScreenIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+  immediateContext->IASetVertexBuffers(0, 1, &fullScreenVertexBuffer, &stride, &offset);
+  immediateContext->IASetIndexBuffer(fullScreenIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-  _pImmediateContext->DrawIndexed(6, 0, 0);
+  immediateContext->DrawIndexed(6, 0, 0);
 }
 
-void Application::Draw() {
-  //
-  // Clear buffers
-  //
-
+void Application::draw() {
   if (!deferredPipeline) {
     shadowMapping();
   }
@@ -1895,8 +1621,5 @@ void Application::Draw() {
     deferredRendering();
   }
 
-  //
-  // Present our back buffer to our front buffer
-  //
-  _pSwapChain->Present(0, 0);
+  swapChain->Present(0, 0);
 }

@@ -96,20 +96,21 @@ void Terrain::frustumCull(XMFLOAT4* frustumPlanes) {
   }
 }
 
-void Terrain::Update(float t) {
+void Terrain::update(float t) {
   for (auto chunk : chunks) {
     chunk->calcMipMapLevel();
-    chunk->Update(t);
+    chunk->update(t);
   }
 }
 
-void Terrain::Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
+void Terrain::draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
   pImmediateContext->IASetVertexBuffers(0, 1, &_geometry.vertexBuffer, &_geometry.vertexBufferStride, &_geometry.vertexBufferOffset);
   for (auto chunk : chunks) {
-    chunk->Draw(cb, constantBuffer, pImmediateContext);
+    chunk->draw(cb, constantBuffer, pImmediateContext);
   }
 }
 
+// taken from Frank Luna 3D Game Programming with DirectX 11
 float Terrain::getCameraHeight(float cameraPosX, float cameraPosZ) const {
   if (heightMap) {
     float c = (cameraPosX + 0.5f * (terrainWidth + 1)) / dX;
@@ -164,12 +165,13 @@ void Terrain::loadHeightMap(int height, int width, std::string heightMapFilename
   // Copy the array data into a float array and scale it. heightMap.resize(heightmapHeight * heightmapWidth, 0);
 
   for (UINT i = 0; i < (height + 1) * (width + 1); ++i) {
-    heightMap[i] = in[i];//(in[i] / 255.0f);// * heightScale;
+    heightMap[i] = in[i];
   }
 }
 
+// adapted from http://gameprogrammer.com/fractal.html#structure
 void Terrain::diamondSquare(int size, int seedValue, float heightScale, float h) {
-  int	stride, firstLine, subSize, numIterations = 0;
+  int	stride, firstLine, subSize;
   float ratio, scale;
 
   subSize = size;
@@ -180,63 +182,12 @@ void Terrain::diamondSquare(int size, int seedValue, float heightScale, float h)
   }
   srand(seedValue);
 
-  /* Set up our roughness constants.
-  Random numbers are always generated in the range 0.0 to 1.0.
-  'scale' is multiplied by the randum number.
-  'ratio' is multiplied by 'scale' after each iteration
-  to effectively reduce the randum number range.
-  */
   ratio = (float) pow(2.0, -h);
   scale = heightScale * ratio;
 
-  /* Seed the first four values. For example, in a 4x4 array, we
-  would initialize the data points indicated by '*':
-
-  *   .   .   .   *
-
-  .   .   .   .   .
-
-  .   .   .   .   .
-
-  .   .   .   .   .
-
-  *   .   .   .   *
-
-  In terms of the "diamond-square" algorithm, this gives us
-  "squares".
-
-  We want the four corners of the array to have the same
-  point. This will allow us to tile the arrays next to each other
-  such that they join seemlessly. */
-
   stride = subSize / 2;
-  //heightMap[(0 * size) + 0] = heightMap[(subSize*size) + 0] = heightMap[(subSize*size) + subSize] = heightMap[(0 * size) + subSize] = 0.0f;
 
-  /* Now we add ever-increasing detail based on the "diamond" seeded
-  values. We loop over stride, which gets cut in half at the
-  bottom of the loop. Since it's an int, eventually division by 2
-  will produce a zero result, terminating the loop. */
   while (stride) {
-    cout << stride << endl;
-    numIterations++;
-    /* Take the existing "square" data and produce "diamond"
-    data. On the first pass through with a 4x4 matrix, the
-    existing data is shown as "X"s, and we need to generate the
-    "*" now:
-
-    X   .   .   .   X
-
-    .   .   .   .   .
-
-    .   .   *   .   .
-
-    .   .   .   .   .
-
-    X   .   .   .   X
-
-    It doesn't look like diamonds. What it actually is, for the
-    first pass, is the corners of four diamonds meeting at the
-    center of the array. */
     for (int i = stride; i < subSize; i += stride) {
       for (int j = stride; j < subSize; j += stride) {
         heightMap[(i * size) + j] = randFloat(-h, h) + avgSquareVals(i, j, stride, size, heightMap);
@@ -245,25 +196,6 @@ void Terrain::diamondSquare(int size, int seedValue, float heightScale, float h)
       i += stride;
     }
 
-    /* Take the existing "diamond" data and make it into
-    "squares". Back to our 4X4 example: The first time we
-    encounter this code, the existing values are represented by
-    "X"s, and the values we want to generate here are "*"s:
-
-    X   .   *   .   X
-
-    .   .   .   .   .
-
-    *   .   X   .   *
-
-    .   .   .   .   .
-
-    X   .   *   .   X
-
-    i and j represent our (x,y) position in the array. The
-    first value we want to generate is at (i=2,j=0), and we use
-    "oddline" and "stride" to increment j to the desired value.
-    */
     firstLine = 0;
     for (int i = 0; i < subSize; i += stride) {
       firstLine = (firstLine == 0);
@@ -272,13 +204,8 @@ void Terrain::diamondSquare(int size, int seedValue, float heightScale, float h)
           j += stride;
         }
 
-        /* i and j are setup. Call avgDiamondVals with the
-        current position. It will return the average of the
-        surrounding diamond data points. */
         heightMap[(i * size) + j] = randFloat(-h, h) + avgDiamondVals(i, j, stride, size, subSize, heightMap);
 
-        /* To wrap edges seamlessly, copy edge values around
-        to other side of array */
         if (i == 0) {
           heightMap[(subSize * size) + j] = heightMap[(i * size) + j];
         }
@@ -294,16 +221,6 @@ void Terrain::diamondSquare(int size, int seedValue, float heightScale, float h)
     h /= 2;
     stride >>= 1;
   }
-
-  cout << numIterations << endl;
-  ofstream a("diamond_square.txt");
-  for (int i = 0; i < size; i++) {
-    for (int j = 0; j < size; j++) {
-      a << heightMap[(i * size) + j] << " ";
-    }
-    a << endl;
-  }
-  a.close();
 }
 
 void Terrain::circleHill(int height, int width, int seedValue, int iterations, int radiusMin, int radiusMax) {
@@ -366,6 +283,7 @@ void Terrain::circleHill(int height, int width, int seedValue, int iterations, i
   }
 }
 
+// taken from http://libnoise.sourceforge.net/tutorials/tutorial5.html
 void Terrain::perlinNoise(int height, int width, double lowerXBound, double upperXBound, double lowerZBound, double upperZBound) {
   int size = (height + 1) * (width + 1);
   heightMap = new float[size];
@@ -396,7 +314,6 @@ void Terrain::perlinNoise(int height, int width, double lowerXBound, double uppe
   utils::NoiseMap noiseMap;
   utils::NoiseMapBuilderPlane heightMapBuilder;
   heightMapBuilder.SetSourceModule(finalTerrain);
-  //heightMapBuilder.SetSourceModule(mountainTerrain);
   heightMapBuilder.SetDestNoiseMap(noiseMap);
   heightMapBuilder.SetDestSize(width + 1, height + 1);
   heightMapBuilder.SetBounds(lowerXBound, upperXBound, lowerZBound, upperZBound);
@@ -447,28 +364,12 @@ void Terrain::generateIndices(float nearPlane, float nearTopLeft, float tau, flo
   for (int i = 0; i < terrainHeight / CHUNK_HEIGHT; i++) {
     for (int j = 0; j < terrainWidth / CHUNK_WIDTH; j++) {
       TerrainChunk* chunk = new TerrainChunk(material, j, i, CHUNK_HEIGHT, CHUNK_WIDTH, terrainWidth, nearPlane, nearTopLeft, tau, verticalResolution, heightMap, device, immediateContext);
-      chunk->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+      chunk->setPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
       chunk->calcMipMapLevel();
-      chunk->Update(0);
+      chunk->update(0);
       chunks.push_back(chunk);
     }
   }
-  //if (!indices) {
-  //  indices = new UINT[numIndices];
-  //  int indicesIndex = 0;
-  //  for (int i = 0; i < terrainHeight; i++) {
-  //    for (int j = 0; j < terrainWidth; j++) {
-  //      // triangle 1
-  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j;
-  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
-  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
-  //      // triangle 2
-  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j;
-  //      indices[indicesIndex++] = (i * (terrainWidth + 1)) + j + 1;
-  //      indices[indicesIndex++] = ((i + 1) * (terrainWidth + 1)) + j + 1;
-  //    }
-  //  }
-  //}
 }
 
 void Terrain::generateNormals() {
@@ -484,21 +385,21 @@ void Terrain::generateNormals() {
       SimpleVertex& v2 = vertices[index2];
       SimpleVertex& v3 = vertices[index3];
 
-      XMVECTOR v1PosVector = XMLoadFloat3(&v1.PosL);
-      XMVECTOR v2PosVector = XMLoadFloat3(&v2.PosL);
-      XMVECTOR v3PosVector = XMLoadFloat3(&v3.PosL);
+      XMVECTOR v1PosVector = XMLoadFloat3(&v1.posL);
+      XMVECTOR v2PosVector = XMLoadFloat3(&v2.posL);
+      XMVECTOR v3PosVector = XMLoadFloat3(&v3.posL);
       XMVECTOR v1Tov2 = v2PosVector - v1PosVector;
       XMVECTOR v1Tov3 = v3PosVector - v1PosVector;
       XMVECTOR normal = XMVector3Cross(v1Tov2, v1Tov3);
 
-      XMStoreFloat3(&v1.NormL, XMLoadFloat3(&v1.NormL) + normal);
-      XMStoreFloat3(&v2.NormL, XMLoadFloat3(&v2.NormL) + normal);
-      XMStoreFloat3(&v3.NormL, XMLoadFloat3(&v3.NormL) + normal);
+      XMStoreFloat3(&v1.normL, XMLoadFloat3(&v1.normL) + normal);
+      XMStoreFloat3(&v2.normL, XMLoadFloat3(&v2.normL) + normal);
+      XMStoreFloat3(&v3.normL, XMLoadFloat3(&v3.normL) + normal);
     }
   }
 
   for (int i = 0; i < numVertices; i++) {
-    XMStoreFloat3(&vertices[i].NormL, XMVector3Normalize(XMLoadFloat3(&vertices[i].NormL)));
+    XMStoreFloat3(&vertices[i].normL, XMVector3Normalize(XMLoadFloat3(&vertices[i].normL)));
   }
 }
 
@@ -509,8 +410,8 @@ void Terrain::setChunkCentres() {
 
     SimpleVertex firstVertex = vertices[firstVertexIndex];
     SimpleVertex lastVertex = vertices[lastVertexIndex];
-    XMFLOAT3 firstPos = firstVertex.PosL;
-    XMFLOAT3 lastPos = lastVertex.PosL;
+    XMFLOAT3 firstPos = firstVertex.posL;
+    XMFLOAT3 lastPos = lastVertex.posL;
     XMFLOAT3 centre { (firstPos.x + lastPos.x) / 2.0f, (firstPos.y + lastPos.y) / 2.0f, (firstPos.z + lastPos.z) / 2.0f };
     chunk->setCentre(centre);
 
@@ -518,7 +419,7 @@ void Terrain::setChunkCentres() {
     float lowest = 0;
 
     for (int i = 0; i < CHUNK_HEIGHT * CHUNK_WIDTH * 6; i++) {
-      float height = vertices[chunk->getIndices()[i]].PosL.y;
+      float height = vertices[chunk->getIndices()[i]].posL.y;
 
       if (height > highest) {
         highest = height;
@@ -575,24 +476,8 @@ int randInt(int min, int max) {
   return min + (rand() % (int) (max - min + 1));
 }
 
+// taken from http://gameprogrammer.com/fractal.html#structure
 float avgDiamondVals(int i, int j, int stride, int size, int subSize, float* fa) {
-  /* In this diagram, our input stride is 1, the i,j location is
-  indicated by "X", and the four value we want to average are
-  "*"s:
-  .   *   .
-
-  *   X   *
-
-  .   *   .
-  */
-
-  /* In order to support tiled surfaces which meet seamless at the
-  edges (that is, they "wrap"), We need to be careful how we
-  calculate averages when the i,j diamond center lies on an edge
-  of the array. The first four 'if' clauses handle these
-  cases. The final 'else' clause handles the general case (in
-  which i,j is not on an edge).
-  */
   if (i == 0)
     return ((float) (fa[(i*size) + j - stride] +
     fa[(i*size) + j + stride] +
@@ -620,24 +505,8 @@ float avgDiamondVals(int i, int j, int stride, int size, int subSize, float* fa)
     fa[(i*size) + j + stride]) * .25f);
 }
 
-
-/*
-* avgSquareVals - Given the i,j location as the center of a square,
-* average the data values at the four corners of the square and return
-* it. "Stride" represents half the length of one side of the square.
-*
-* Called by fill2DFractArray.
-*/
+// taken from http://gameprogrammer.com/fractal.html#structure
 float avgSquareVals(int i, int j, int stride, int size, float* fa) {
-  /* In this diagram, our input stride is 1, the i,j location is
-  indicated by "*", and the four value we want to average are
-  "X"s:
-  X   .   X
-
-  .   *   .
-
-  X   .   X
-  */
   return ((float) (fa[((i - stride)*size) + j - stride] +
     fa[((i - stride)*size) + j + stride] +
     fa[((i + stride)*size) + j - stride] +

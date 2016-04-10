@@ -60,7 +60,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
   Application* theApp = new Application();
 
-  if (FAILED(theApp->Initialise(hInstance, nCmdShow))) {
+  if (FAILED(theApp->initialise(hInstance, nCmdShow))) {
     return -1;
   }
 
@@ -74,7 +74,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
       bool handled = false;
 
       if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST) {
-        handled = theApp->HandleKeyboard(msg);
+        handled = theApp->handleKeyboard(msg);
       }
       else if (msg.message == WM_LBUTTONDOWN) {
         theApp->handleMouseClick(msg.wParam, GET_X_LPARAM(msg.lParam), GET_Y_LPARAM(msg.lParam));
@@ -92,8 +92,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
     }
     else {
       calculateFrameRateStats(theApp);
-      theApp->Update();
-      theApp->Draw();
+      theApp->update();
+      theApp->draw();
     }
   }
 

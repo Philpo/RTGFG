@@ -32,48 +32,48 @@ public:
   virtual ~GameObject();
 
   // Setters and Getters for position/rotation/scale
-  void SetPosition(XMFLOAT3 position) { _position = position; }
-  void SetPosition(float x, float y, float z) { _position.x = x; _position.y = y; _position.z = z; }
+  void setPosition(XMFLOAT3 position) { _position = position; }
+  void setPosition(float x, float y, float z) { _position.x = x; _position.y = y; _position.z = z; }
 
-  XMFLOAT3 GetPosition() const { return _position; }
+  XMFLOAT3 getPosition() const { return _position; }
 
-  void SetScale(XMFLOAT3 scale) { _scale = scale; }
-  void SetScale(float x, float y, float z) { _scale.x = x; _scale.y = y; _scale.z = z; }
+  void setScale(XMFLOAT3 scale) { _scale = scale; }
+  void setScale(float x, float y, float z) { _scale.x = x; _scale.y = y; _scale.z = z; }
 
-  XMFLOAT3 GetScale() const { return _scale; }
+  XMFLOAT3 getScale() const { return _scale; }
 
-  void SetRotation(XMFLOAT3 rotation) { _rotation = rotation; }
-  void SetRotation(float x, float y, float z) { _rotation.x = x; _rotation.y = y; _rotation.z = z; }
+  void setRotation(XMFLOAT3 rotation) { _rotation = rotation; }
+  void setRotation(float x, float y, float z) { _rotation.x = x; _rotation.y = y; _rotation.z = z; }
 
-  void setWorldRotation(XMFLOAT3 rotation) { worldRotation = rotation; }
-  void setWorldRotation(float x, float y, float z) { worldRotation.x = x; worldRotation.y = y; worldRotation.z = z; }
+  void setOriginRotation(XMFLOAT3 rotation) { originRotation = rotation; }
+  void setOriginRotation(float x, float y, float z) { originRotation.x = x; originRotation.y = y; originRotation.z = z; }
 
-  XMFLOAT3 GetRotation() const { return _rotation; }
-  XMFLOAT3 getWorldRotation() const { return worldRotation; }
+  XMFLOAT3 getRotation() const { return _rotation; }
+  XMFLOAT3 getOriginRotation() const { return originRotation; }
 
-  string GetType() const { return _type; }
+  string getType() const { return _type; }
 
-  Geometry GetGeometryData() const { return _geometry; }
+  Geometry getGeometryData() const { return _geometry; }
 
-  Material GetMaterial() const { return _material; }
+  Material getMaterial() const { return _material; }
 
-  XMMATRIX GetWorldMatrix() const { return XMLoadFloat4x4(&_world); }
+  XMMATRIX getWorldMatrix() const { return XMLoadFloat4x4(&_world); }
 
-  void SetTextureRV(ID3D11ShaderResourceView * textureRV) { _textureRV = textureRV; }
-  ID3D11ShaderResourceView * GetTextureRV() const { return _textureRV; }
-  bool HasTexture() const { return _textureRV ? true : false; }
+  void setTextureRV(ID3D11ShaderResourceView* textureRV) { _textureRV = textureRV; }
+  ID3D11ShaderResourceView* getTextureRV() const { return _textureRV; }
+  bool hasTexture() const { return _textureRV ? true : false; }
 
-  void SetParent(GameObject * parent) { _parent = parent; }
+  void setParent(GameObject * parent) { _parent = parent; }
   virtual void setGeometry(Geometry geometry) { _geometry = geometry; }
 
-  virtual void Update(float t);
-  virtual void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext);
+  virtual void update(float t);
+  virtual void draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext);
 protected:
   Geometry _geometry;
 private:
   XMFLOAT3 _position;
   XMFLOAT3 _rotation;
-  XMFLOAT3 worldRotation;
+  XMFLOAT3 originRotation;
   XMFLOAT3 _scale;
 
   string _type;

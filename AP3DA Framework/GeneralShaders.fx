@@ -93,12 +93,14 @@ VS_OUTPUT VS(VS_INPUT input) {
 
   float d = distance(output.posW, eyePosW);
 
+  // taken from Frank Luna 3D Game Programming with DirectX 11
   // Normalized tessellation factor. 
   // The tessellation is 
   //   0 if d >= gMinTessDistance and
   //   1 if d <= gMaxTessDistance.  
   float tess = saturate((minTessDistance - d) / (minTessDistance - maxTessDistance));
 
+  // taken from Frank Luna 3D Game Programming with DirectX 11
   // Rescale [0,1] --> [gMinTessFactor, gMaxTessFactor].
   output.tessFactor = minTessFactor + tess * (maxTessFactor - minTessFactor);
 
@@ -123,12 +125,14 @@ VS_OUTPUT INSTANCE_VS(INSTANCE_VS_INPUT input) {
 
   float d = distance(output.posW, eyePosW);
 
+  // taken from Frank Luna 3D Game Programming with DirectX 11
   // Normalized tessellation factor. 
   // The tessellation is 
   //   0 if d >= gMinTessDistance and
   //   1 if d <= gMaxTessDistance.  
   float tess = saturate((minTessDistance - d) / (minTessDistance - maxTessDistance));
 
+  // taken from Frank Luna 3D Game Programming with DirectX 11
   // Rescale [0,1] --> [gMinTessFactor, gMaxTessFactor].
   output.tessFactor = minTessFactor + tess * (maxTessFactor - minTessFactor);
 
@@ -136,14 +140,10 @@ VS_OUTPUT INSTANCE_VS(INSTANCE_VS_INPUT input) {
 }
 
 // Hull shaders
+// taken from Frank Luna 3D Game Programming with DirectX 11
 PatchTess PatchHS(InputPatch<VS_OUTPUT, 3> patch, uint patchID : SV_PrimitiveID) {
   PatchTess pt;
 
-  // Average tess factors along edges, and pick an edge tess factor for 
-  // the interior tessellation.  It is important to do the tess factor
-  // calculation based on the edge properties so that edges shared by 
-  // more than one triangle will have the same tessellation factor.  
-  // Otherwise, gaps can appear.
   pt.edgeTess[0] = 0.5f*(patch[1].tessFactor + patch[2].tessFactor);
   pt.edgeTess[1] = 0.5f*(patch[2].tessFactor + patch[0].tessFactor);
   pt.edgeTess[2] = 0.5f*(patch[0].tessFactor + patch[1].tessFactor);
@@ -152,6 +152,7 @@ PatchTess PatchHS(InputPatch<VS_OUTPUT, 3> patch, uint patchID : SV_PrimitiveID)
   return pt;
 }
 
+// taken from Frank Luna 3D Game Programming with DirectX 11
 [domain("tri")]
 [partitioning("fractional_odd")]
 [outputtopology("triangle_cw")]
@@ -170,6 +171,7 @@ HullOut HS(InputPatch<VS_OUTPUT, 3> p, uint i : SV_OutputControlPointID, uint pa
   return hout;
 }
 
+// taken from Frank Luna 3D Game Programming with DirectX 11
 // Domain Shader
 [domain("tri")]
 DomainOut DS(PatchTess patchTess, float3 bary : SV_DomainLocation, const OutputPatch<HullOut, 3> tri) {
@@ -184,21 +186,6 @@ DomainOut DS(PatchTess patchTess, float3 bary : SV_DomainLocation, const OutputP
 
   // Interpolating normal can unnormalize it, so normalize it.
   dout.normW = normalize(dout.normW);
-
-  //
-  // Displacement mapping.
-  //
-
-  // Choose the mipmap level based on distance to the eye; specifically, choose
-  // the next miplevel every MipInterval units, and clamp the miplevel in [0,6].
-  const float mipInterval = 20.0f;
-  float mipLevel = clamp((distance(dout.posW, eyePosW) - mipInterval) / mipInterval, 0.0f, 6.0f);
-
-  // Sample height map (stored in alpha channel).
-  //float h = gNormalMap.SampleLevel(samLinear, dout.Tex, mipLevel).a;
-
-  // Offset vertex along normal.
-  //dout.PosW += (gHeightScale*(h - 1.0))*dout.NormW;
 
   // Project to homogeneous clip space.
   dout.posH = mul(float4(dout.posW, 1.0f), view);

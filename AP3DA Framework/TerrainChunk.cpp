@@ -9,10 +9,6 @@ GameObject("terrain_chunk", material), xOffset(xOffset), zOffset(zOffset), heigh
 , heightMap(heightMap), north(nullptr), south(nullptr), east(nullptr), west(nullptr) {
   numMipLevels = terrainWidth != width ? (terrainWidth / width) - 1 : 1;
 
-  //if (numMipLevels > 5) {
-  //  numMipLevels = 5;
-  //}
-
   currentMipLevel = 0;
   indices = new UINT*[numMipLevels];
   numberOfIndices = new int[numMipLevels];
@@ -104,7 +100,6 @@ void TerrainChunk::calcMipMapLevel() {
     if (cameraMoved) {
       XMVECTOR toCamera = XMLoadFloat3(&centre) - XMLoadFloat3(&cameraPosition);
       XMFLOAT3 distanceToCamera;
-      //      XMStoreFloat3(&distanceToCamera, XMVector3Length(toCamera));
       XMStoreFloat3(&distanceToCamera, toCamera);
 
       float d2 = (distanceToCamera.x * distanceToCamera.x) + (distanceToCamera.y * distanceToCamera.y) + (distanceToCamera.z * distanceToCamera.z);
@@ -130,11 +125,13 @@ void TerrainChunk::calcMipMapLevel() {
   }
 }
 
-void TerrainChunk::Update(float t) {
+void TerrainChunk::update(float t) {
   if (visible) {
-    GameObject::Update(t);
+    GameObject::update(t);
 
+    // if the camera hasn't moved, then we can guarantee that the mip levels haven't changed, so no need to check
     if (cameraMoved) {
+      // if any of the neighbouring chunks have changed mip level, recalculate the indices to deal with cracks
       if (north && north->refresh) {
         refresh = true;
       }
@@ -148,15 +145,6 @@ void TerrainChunk::Update(float t) {
         refresh = true;
       }
 
-      //int newMipLevel = currentMipLevel;
-
-      //for (int i = 0; i < numMipLevels; i++) {
-      //  if (distanceToCamera.x > mipMapDistances[i] && (i == numMipLevels - 1 || distanceToCamera.x <= mipMapDistances[i + 1])) {
-      //    newMipLevel = i;
-      //    break;
-      //  }
-      //}
-
       if (refresh) {
         refreshIndexBuffer();
         cameraMoved = false;
@@ -165,21 +153,21 @@ void TerrainChunk::Update(float t) {
   }
 }
 
-void TerrainChunk::Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
+void TerrainChunk::draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) {
   if (visible) {
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
 
-    Material material = GetMaterial();
+    Material material = getMaterial();
 
     // Copy material to shader
-    cb.surface.AmbientMtrl = material.ambient;
-    cb.surface.DiffuseMtrl = material.diffuse;
-    cb.surface.SpecularMtrl = material.specular;
+    cb.surface.ambientMtrl = material.ambient;
+    cb.surface.diffuseMtrl = material.diffuse;
+    cb.surface.specularMtrl = material.specular;
 
     // Set texture
-    cb.HasTexture = 1.0f;
-    cb.World = GetWorldMatrix();
+    cb.hasTexture = 1.0f;
+    cb.world = getWorldMatrix();
 
     // Update constant buffer
     pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
@@ -220,6 +208,7 @@ void TerrainChunk::refreshIndexBuffer() {
   immediateContext->Unmap(indexBuffer, 0);
 }
 
+// taken from https://www.gamedev.net/topic/252983-geomipmaps---precalculating-d/
 void TerrainChunk::calcDn2() {
   mipMapDistances[0] = 0;
 
@@ -228,7 +217,7 @@ void TerrainChunk::calcDn2() {
   for (int l = 0; l < numMipLevels - 2; l++) {
     int start = (int) pow(2.0f, l);
     int inc = start * 2;
-    //first set of removed vertices
+
     for (int i = start; i < height; i += inc) {
       for (int j = start; j < width; j += inc) {
         deltaMax = max(deltaMax, fabsf(getHeight(i, j) - (getHeight(i - start, j - start) + getHeight(i + start, j + start)) / 2.0f));
@@ -237,35 +226,6 @@ void TerrainChunk::calcDn2() {
     }
     mipMapDistances[l] = deltaMax * deltaMax * cSquared;
   }
-
-  ////	Loop over each mip-map level.
-  //int step = 2;
-  //for (int level = 1; level < numMipLevels; ++level) {
-  //  //	Loop over all the points in the block calculating deltas.
-  //  int endZ = width + zOffset;
-  //  int endX = width + xOffset;
-  //  for (int i = zOffset; i < endZ; ++i) {
-  //    int posZ = i / step;
-  //    posZ *= step;
-  //    for (int j = xOffset; j < endX; ++j) {
-  //      if (i%step != 0 || j%step != 0) {
-  //        int posX = j / step;
-  //        posX *= step;
-  //        float delta = biLinearInterp(posX, posX + step, posZ, posZ + step, j, i);
-  //        delta -= heightMap[(i * (terrainWidth + 1)) + j];
-  //        delta = abs(delta);
-  //        deltaMax = max(deltaMax, delta);
-  //      }
-  //    }
-  //  }
-
-  //  //	Save off maximum delta^2 * C^2;
-  //  mipMapDistances[level] = deltaMax * deltaMax * cSquared;
-
-
-  //  //	Prepare for next level.
-  //  step *= 2;
-  //}
 }
 
 float TerrainChunk::getHeight(int i, int j) {

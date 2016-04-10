@@ -13,7 +13,7 @@ public:
   void setTerrain(Terrain* const terrain) { this->terrain = terrain; }
   void setAnimation(const std::vector<KeyFrame>& animation) { this->animation = animation; }
   void addWaypoint(XMFLOAT3 waypoint) { waypoints.push_back(waypoint); }
-  void setRoot(GameObject* const rootNode) { this->root = rootNode; rootInitialPosition = root->GetPosition(); }
+  void setRoot(GameObject* const rootNode) { this->root = rootNode; rootInitialPosition = root->getPosition(); }
   void runAnimation(const std::vector<KeyFrame>& frames);
   
   void walk();
@@ -32,8 +32,7 @@ private:
   std::vector<XMFLOAT3> waypoints;
   Terrain* terrain;
   GameObject* root;
-  XMFLOAT3 rootInitialPosition, facing;
-  float previousRotation = 0.0f;
+  XMFLOAT3 rootInitialPosition;
 
   ID3D11Buffer* instanceBuffer;
   ID3D11DeviceContext* pImmediateContext;

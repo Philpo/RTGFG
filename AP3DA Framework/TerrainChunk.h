@@ -25,8 +25,8 @@ public:
   void setWestChunk(TerrainChunk* const west) { this->west = west; }
   void setCameraMoved(bool cameraMoved) { this->cameraMoved = cameraMoved; }
   void calcMipMapLevel();
-  void Update(float t) override;
-  void Draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
+  void update(float t) override;
+  void draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer, ID3D11DeviceContext * pImmediateContext) override;
 private:
   int* numberOfIndices;
   float *mipMapDistances, *heightMap;

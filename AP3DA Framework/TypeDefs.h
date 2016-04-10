@@ -6,9 +6,9 @@ using namespace DirectX;
 const int DEFERRED_BUFFERS = 2;
 
 struct SimpleVertex {
-  XMFLOAT3 PosL;
-  XMFLOAT3 NormL;
-  XMFLOAT2 Tex;
+  XMFLOAT3 posL;
+  XMFLOAT3 normL;
+  XMFLOAT2 tex;
 };
 
 struct InstanceData {
@@ -16,33 +16,33 @@ struct InstanceData {
 };
 
 struct SurfaceInfo {
-  XMFLOAT4 AmbientMtrl;
-  XMFLOAT4 DiffuseMtrl;
-  XMFLOAT4 SpecularMtrl;
+  XMFLOAT4 ambientMtrl;
+  XMFLOAT4 diffuseMtrl;
+  XMFLOAT4 specularMtrl;
 };
 
 struct Light {
-  XMFLOAT4 AmbientLight;
-  XMFLOAT4 DiffuseLight;
-  XMFLOAT4 SpecularLight;
+  XMFLOAT4 ambientLight;
+  XMFLOAT4 diffuseLight;
+  XMFLOAT4 specularLight;
 
   float SpecularPower;
-  XMFLOAT3 LightVecW;
+  XMFLOAT3 lightVecW;
 };
 
 struct ConstantBuffer {
-  XMMATRIX World;
-  XMMATRIX View;
-  XMMATRIX Projection;
+  XMMATRIX world;
+  XMMATRIX view;
+  XMMATRIX projection;
   XMMATRIX shadowTransform;
 
   SurfaceInfo surface;
   Light light;
 
-  XMFLOAT3 EyePosW;
-  float HasTexture;
-  float gMaxTessDistance;
-  float gMinTessDistance;
-  float gMinTessFactor;
-  float gMaxTessFactor;
+  XMFLOAT3 eyePosW;
+  float hasTexture;
+  float maxTessDistance;
+  float minTessDistance;
+  float minTessFactor;
+  float maxTessFactor;
 };

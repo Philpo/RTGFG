@@ -14,8 +14,6 @@ Skeleton::Skeleton(int numBones, ID3D11Device* d3dDevice, ID3D11DeviceContext* p
   ZeroMemory(&InitData, sizeof(InitData));
 
   HRESULT hr = d3dDevice->CreateBuffer(&desc, 0, &instanceBuffer);
-
-  facing = XMFLOAT3(0.0f, 0.0f, 1.0f);
 }
 
 Skeleton::~Skeleton() {
@@ -38,13 +36,13 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
         bone = bones[effectedBones[i]];
 
         if (frameCount == 1.0f) {
-          initialPositions.push_back(bone->GetPosition());
-          initialRotations.push_back(bone->getWorldRotation());
+          initialPositions.push_back(bone->getPosition());
+          initialRotations.push_back(bone->getOriginRotation());
         }
 
         if (frame.getUpdatePositions()[i]) {
           XMStoreFloat3(&newPos, XMVectorLerp(XMLoadFloat3(&initialPositions[i]), XMLoadFloat3(&frame.getPositions()[i]), frameCount / (float) frame.getNumFrames()));
-          bone->SetPosition(newPos);
+          bone->setPosition(newPos);
         }
 
         if (frame.getUpdateRotations()[i]) {
@@ -54,7 +52,7 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
           rotationInRadians.z = XMConvertToRadians(frame.getRotations()[i].z);
 
           XMStoreFloat3(&newRotation, XMVectorLerp(XMLoadFloat3(&initialRotations[i]), XMLoadFloat3(&rotationInRadians), frameCount / (float) frame.getNumFrames()));
-          bone->setWorldRotation(newRotation);
+          bone->setOriginRotation(newRotation);
         }
       }
       frameCount++;
@@ -76,7 +74,7 @@ void Skeleton::runAnimation(const std::vector<KeyFrame>& frames) {
 
 void Skeleton::walk() {
   if (waypoints.size() > 0) {
-    if (root->GetPosition().x != waypoints[target].x || root->GetPosition().z != waypoints[target].z) {
+    if (root->getPosition().x != waypoints[target].x || root->getPosition().z != waypoints[target].z) {
       if (currentFrame == animation.size()) {
         currentFrame = 0;
         frameCount = 1;
@@ -91,37 +89,23 @@ void Skeleton::walk() {
       XMFLOAT3 newPos;
       XMStoreFloat3(&newPos, XMVectorLerp(XMLoadFloat3(&rootInitialPosition), XMLoadFloat3(&waypoints[target]), move / (float) lerpParam));
       newPos.y = terrain->getCameraHeight(newPos.x, newPos.z) + 13.5;
-      root->SetPosition(newPos);
+      root->setPosition(newPos);
 
       move++;
     }
     else {
-      rootInitialPosition = root->GetPosition();
+      rootInitialPosition = root->getPosition();
       target = target == waypoints.size() - 1 ? 0 : target + 1;
      
       XMVECTOR toTarget = XMLoadFloat3(&waypoints[target]) - XMLoadFloat3(&XMFLOAT3(rootInitialPosition.x, 0.0f, rootInitialPosition.z));
       toTarget = XMVector3Normalize(toTarget);
       XMFLOAT3 temp;
       XMStoreFloat3(&temp, toTarget);
-      float angle = atan2(temp.x, temp.z) * (180.0 / XM_PI);
+      float angle = atan2(temp.x, temp.z);
 
-      // Convert rotation into radians.
-      //float rotation = (float) angle * 0.0174532925f;
-      //XMFLOAT3 dotProduct;
-      //XMStoreFloat3(&dotProduct, XMVector3Dot(XMVector3Normalize(XMLoadFloat3(&facing)), XMVector3Normalize(toTarget)));
-      //float angle = acos(dotProduct.x);
-
-      //if (waypoints[target].x < 0) {
-      //  angle *= -1;
-      //}
-
-      cout << "angle " << XMConvertToDegrees(angle) << endl;
-
-      XMFLOAT3 rotation = root->getWorldRotation();
-      rotation.y = (float) angle * 0.0174532925f;
-      root->setWorldRotation(rotation);
-      XMStoreFloat3(&facing, XMVector3Normalize(XMVector3Transform(XMLoadFloat3(&facing), XMMatrixRotationY(angle))));
-      cout << "facing (" << facing.x << "," << facing.y << "," << facing.z << ")" << endl;
+      XMFLOAT3 rotation = root->getOriginRotation();
+      rotation.y = (float) angle;
+      root->setOriginRotation(rotation);
 
       move = 1;
       updateInstanceBuffer = false;
@@ -131,7 +115,7 @@ void Skeleton::walk() {
 
 void Skeleton::update(float t) {
   for (auto bone : bones) {
-    bone->Update(t);
+    bone->update(t);
   }
 
   if (updateInstanceBuffer) {
@@ -140,7 +124,7 @@ void Skeleton::update(float t) {
     InstanceData* data = reinterpret_cast<InstanceData*>(mappedData.pData);
 
     for (int i = 0; i < bones.size(); i++) {
-      XMStoreFloat4x4(&data[i].world, XMMatrixTranspose(bones[i]->GetWorldMatrix()));
+      XMStoreFloat4x4(&data[i].world, XMMatrixTranspose(bones[i]->getWorldMatrix()));
     }
     pImmediateContext->Unmap(instanceBuffer, 0);
   }
@@ -151,41 +135,23 @@ void Skeleton::draw(ConstantBuffer& cb, ID3D11Buffer* constantBuffer) {
     UINT stride[2] = { sizeof(SimpleVertex), sizeof(InstanceData) };
     UINT offset[2] = { 0, 0 };
 
-    ID3D11Buffer* buffers[2] = { bones[0]->GetGeometryData().vertexBuffer, instanceBuffer };
+    ID3D11Buffer* buffers[2] = { bones[0]->getGeometryData().vertexBuffer, instanceBuffer };
 
     pImmediateContext->IASetVertexBuffers(0, 2, buffers, stride, offset);
 
-    Material material = bones[0]->GetMaterial();
+    Material material = bones[0]->getMaterial();
 
     // Copy material to shader
-    cb.surface.AmbientMtrl = material.ambient;
-    cb.surface.DiffuseMtrl = material.diffuse;
-    cb.surface.SpecularMtrl = material.specular;
+    cb.surface.ambientMtrl = material.ambient;
+    cb.surface.diffuseMtrl = material.diffuse;
+    cb.surface.specularMtrl = material.specular;
 
     // Set texture
-    cb.HasTexture = 0.0f;
+    cb.hasTexture = 0.0f;
 
     // Update constant buffer
     pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
-    pImmediateContext->IASetIndexBuffer(bones[0]->GetGeometryData().indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-    pImmediateContext->DrawIndexedInstanced(bones[0]->GetGeometryData().numberOfIndices, bones.size(), 0, 0, 0);
+    pImmediateContext->IASetIndexBuffer(bones[0]->getGeometryData().indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    pImmediateContext->DrawIndexedInstanced(bones[0]->getGeometryData().numberOfIndices, bones.size(), 0, 0, 0);
   }
-
-  //if (bones.size() > 0) {
-  //  cb.HasTexture = 0.0f;
-  //  Material material = bones[0]->GetMaterial();
-
-  //  // Copy material to shader
-  //  cb.surface.AmbientMtrl = material.ambient;
-  //  cb.surface.DiffuseMtrl = material.diffuse;
-  //  cb.surface.SpecularMtrl = material.specular;
-
-  //  for (auto bone : bones) {
-  //    cb.World = XMMatrixTranspose(bone->GetWorldMatrix());
-
-  //    pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
-
-  //    bone->Draw(cb, constantBuffer, pImmediateContext);
-  //  }
-  //}
 }

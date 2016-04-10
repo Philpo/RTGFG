@@ -9,44 +9,27 @@
 using namespace DirectX;
 
 class Camera {
-private:
-  bool moveable, freeFlying;
-
-  XMFLOAT3 _eye, baseEye;
-  XMFLOAT3 _at;
-  XMFLOAT3 _worldUp;
-  XMFLOAT3 right, up;
-
-  FLOAT _windowWidth;
-  FLOAT _windowHeight;
-  FLOAT _nearDepth;
-  FLOAT _farDepth;
-
-  XMFLOAT4X4 _view, basicView;
-  XMFLOAT4X4 _projection, orthoProjection;
-
 public:
   Camera(bool moveable, bool freeFlying, XMFLOAT3 position, XMFLOAT3 at, XMFLOAT3 up, FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth);
   ~Camera();
 
-  void Update();
+  void update();
 
-  XMFLOAT4X4 GetView() const { return _view; }
-  XMFLOAT4X4 GetBasicView() const { return basicView; }
-  XMFLOAT4X4 GetProjection() const { return _projection; }
+  XMFLOAT4X4 getView() const { return view; }
+  XMFLOAT4X4 getBasicView() const { return basicView; }
+  XMFLOAT4X4 getProjection() const { return projection; }
   XMFLOAT4X4 getOrthoProjection() const { return orthoProjection; }
 
-  XMFLOAT4X4 GetViewProjection() const;
+  XMFLOAT4X4 getViewProjection() const;
 
-  XMFLOAT3 GetPosition() const { return _eye; }
-  XMFLOAT3 GetLookAt() const { return _at; }
-  XMFLOAT3 GetUp() const { return _worldUp; }
+  XMFLOAT3 getPosition() const { return eye; }
+  XMFLOAT3 getLookAt() const { return at; }
+  XMFLOAT3 getUp() const { return worldUp; }
   XMFLOAT3 getRight() const { return right; }
 
-  void SetPosition(XMFLOAT3 position) { _eye = position; }
-  void SetLookAt(XMFLOAT3 lookAt) { _at = lookAt; }
-  void SetUp(XMFLOAT3 up) { _worldUp = up; }
-//  void setHeight(float height);
+  void setPosition(XMFLOAT3 position) { eye = position; }
+  void setLookAt(XMFLOAT3 lookAt) { at = lookAt; }
+  void setUp(XMFLOAT3 up) { worldUp = up; }
 
   void move(const float distance, const Terrain& terrain);
   void moveY(const float distance);
@@ -54,6 +37,20 @@ public:
   void rotatePitch(const float angle);
   void rotateYaw(const float angle);
 
-  void Reshape(FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth);
-};
+  void reshape(FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth);
+private:
+  bool moveable, freeFlying;
 
+  XMFLOAT3 eye, baseEye;
+  XMFLOAT3 at;
+  XMFLOAT3 worldUp;
+  XMFLOAT3 right, up;
+
+  FLOAT windowWidth;
+  FLOAT windowHeight;
+  FLOAT nearDepth;
+  FLOAT farDepth;
+
+  XMFLOAT4X4 view, basicView;
+  XMFLOAT4X4 projection, orthoProjection;
+};

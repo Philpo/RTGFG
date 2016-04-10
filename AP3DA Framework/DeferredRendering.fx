@@ -116,17 +116,10 @@ float4 LIGHTING_PS(VS_OUTPUT input) : SV_Target {
   float3 diffuse = float3(0.0f, 0.0f, 0.0f);
   float3 specular = float3(0.0f, 0.0f, 0.0f);
 
-  float3 lightLecNorm = normalize(light.lightVecW);
-  // Compute Colour
-
-  // Compute the reflection vector.
-  //float3 r = reflect(-lightLecNorm, normalW);
-
-  // Determine how much specular light makes it into the eye.
-  //float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
+  float3 lightVecNorm = normalize(light.lightVecW);
 
   // Determine the diffuse light intensity that strikes the vertex.
-  float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+  float diffuseAmount = max(dot(lightVecNorm, normalW), 0.0f);
 
   diffuse += diffuseAmount * (surface.diffuseMtrl * light.diffuseLight).rgb;
   ambient += (surface.ambientMtrl * light.ambientLight).rgb;
